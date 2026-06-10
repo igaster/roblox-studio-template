@@ -1,0 +1,33 @@
+{
+  "name": "my-roblox-game",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "GameConfig": {
+        "$path": "src/game/ReplicatedStorage/GameConfig.lua"
+      },
+      "Modules": {
+        "$path": "src/game/ReplicatedStorage/Modules"
+      },
+      "Classes": {
+        "$path": "src/game/ReplicatedStorage/Classes"
+      },
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "$path": "src/game/ServerScriptService"
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "$path": "src/game/StarterPlayerScripts"
+      }
+    },
+    "ServerStorage": {
+      "AssetGenerators": {
+        "$path": "src/game/ServerStorage/AssetGenerators"
+      }
+    }
+  }
+}
