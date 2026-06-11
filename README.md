@@ -5,8 +5,7 @@ A minimal project template for Roblox games using [Rojo](https://rojo.space/) fo
 ## What's Included
 
 - Rojo 7.6.1 pinned via Rokit
-- Game place + Lobby place, each with their own Rojo config
-- `src/shared/` for modules used by both places
+- `src/shared/` for modules synced into both places
 - `ServerStorage/AssetGenerators/` pattern for programmatic asset creation
 - `GameConfig.lua` as a single source of truth for all game settings
 - `CLAUDE.md` with project rules for AI-assisted development
@@ -21,14 +20,15 @@ A minimal project template for Roblox games using [Rojo](https://rojo.space/) fo
 
 ```bash
 # 1. Use this template or clone it
-gh repo create my-game --template your-org/roblox-studio-template
+gh repo create my-game --template igaster/roblox-studio-template
 cd my-game
 
 # 2. Bootstrap (installs Rojo + Studio plugin)
-./bootstrap.sh
+./bootstrap.sh          # mac/linux
+bootstrap.bat           # windows
 
 # 3. Rename the project
-#    Edit "name" in default.project.json and lobby.project.json
+#    Edit "name" in default.project.json
 
 # 4. Start developing
 make serve
@@ -39,18 +39,15 @@ make serve
 
 | Command | Description |
 |---|---|
-| `make serve` | Start Rojo server for the game place |
-| `make serve-lobby` | Start Rojo server for the lobby place |
-| `make build` | Build game place → `game.rbxl` |
-| `make build-lobby` | Build lobby place → `lobby.rbxl` |
+| `make serve` | Start Rojo server |
+| `make build` | Build place → `game.rbxl` |
 
 ## Project Structure
 
 ```
 src/
 ├── game/          # Game place scripts
-├── lobby/         # Lobby place scripts
-└── shared/        # Shared modules (synced into both places)
+└── shared/        # Shared modules (synced into ReplicatedStorage.Shared)
 ```
 
 See `CLAUDE.md` for full conventions and architecture guidelines.

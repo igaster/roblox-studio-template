@@ -9,30 +9,19 @@ Roblox game developed with Rojo for local development and live-syncing to Roblox
 - Rojo v7.6.1 is pinned in `rokit.toml`.
 
 ## Key Commands
-- `make serve` - Start Rojo server for the game place
-- `make serve-lobby` - Start Rojo server for the lobby place
-- `make build` - Build the game place to `game.rbxl`
-- `make build-lobby` - Build the lobby place to `lobby.rbxl`
+- `make serve` - Start Rojo server
+- `make build` - Build the place to `game.rbxl`
 - `rojo plugin install` - Install/update the Rojo plugin in Roblox Studio
 
 ## Project Structure
-
-The project contains two Roblox places in the same game universe, each with its own Rojo config:
-
-| Place | Rojo config | Source directory |
-|---|---|---|
-| Game | `default.project.json` | `src/game/` |
-| Lobby | `lobby.project.json` | `src/lobby/` |
-
-Modules shared by both places live in `src/shared/` and are synced into `ReplicatedStorage.Shared` in both places.
 
 ```
 src/
 ├── game/                        # Game place
 │   ├── ReplicatedStorage/
-│   │   ├── GameConfig.lua       # All game configuration (towers, enemies, waves)
+│   │   ├── GameConfig.lua       # All game configuration
 │   │   ├── Classes/             # OOP entities (one file per class)
-│   │   └── Modules/             # Game-specific utilities
+│   │   └── Modules/             # Utilities
 │   ├── ServerScriptService/     # Server-authoritative game logic
 │   ├── StarterPlayerScripts/    # Client UI and input
 │   └── ServerStorage/
@@ -41,11 +30,7 @@ src/
 │           ├── Models/
 │           ├── Parts/
 │           └── Tools/
-├── lobby/                       # Lobby place
-│   ├── ReplicatedStorage/       # Lobby-specific modules
-│   ├── ServerScriptService/     # Party and teleport logic
-│   └── StarterPlayerScripts/    # Lobby UI
-└── shared/                      # Modules used by both places
+└── shared/                      # Modules synced into ReplicatedStorage.Shared
 ```
 
 ### What Rojo Syncs vs. What Studio Owns
@@ -58,10 +43,9 @@ The rule: **behavior and logic = code (git)**, **visual/3D assets = Studio**.
 
 ### Configuration Files
 
-- **`default.project.json`**: Rojo config for the game place — maps `src/` paths to Roblox services.
-- **`lobby.project.json`**: Rojo config for the lobby place.
+- **`default.project.json`**: Rojo config — maps `src/` paths to Roblox services.
 - **`rokit.toml`**: Rokit toolchain configuration (pins Rojo version).
-- **`Makefile`**: Build and serve commands for both places.
+- **`Makefile`**: Build and serve commands.
 - **`bootstrap.sh`**: One-time setup script for fresh clones.
 
 ### Asset Generation Pattern
@@ -79,7 +63,7 @@ Assets are organized by type (`GUI/`, `Models/`, `Parts/`, `Tools/`). When Claud
 ## Development Workflow
 
 1. **Setup**: Run `./bootstrap.sh` once after cloning.
-2. **Start server**: `make serve` (game) or `make serve-lobby` (lobby).
+2. **Start server**: `make serve`.
 3. **Open Studio**: Open the matching place via Asset Manager → Places, then connect the Rojo plugin to `localhost:34872`.
 4. **Develop**: Edit Lua files in VS Code → changes sync to Studio automatically → test in Studio's play mode.
 5. **Commit**: Commit `src/` changes regularly. Ignore `.rbxl` build artifacts.
