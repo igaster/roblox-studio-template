@@ -10,7 +10,6 @@ Roblox game developed with Rojo for local development and live-syncing to Roblox
 
 ## Key Commands
 - `make serve` - Start Rojo server
-- `make build` - Build the place to `game.rbxl`
 - `rojo plugin install` - Install/update the Rojo plugin in Roblox Studio
 
 ## Project Structure
@@ -66,8 +65,7 @@ Assets are organized by type (`GUI/`, `Models/`, `Parts/`, `Tools/`). When Claud
 2. **Start server**: `make serve`.
 3. **Open Studio**: Open the matching place via Asset Manager → Places, then connect the Rojo plugin to `localhost:34872`.
 4. **Develop**: Edit Lua files in VS Code → changes sync to Studio automatically → test in Studio's play mode.
-5. **Commit**: Commit `src/` changes regularly. Ignore `.rbxl` build artifacts.
-6. **Build**: `make build` to produce `.rbxl` files for upload to Roblox.
+5. **Commit**: Commit `src/` changes regularly.
 
 ## Key Conventions
 

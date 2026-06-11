@@ -40,7 +40,6 @@ make serve
 | Command | Description |
 |---|---|
 | `make serve` | Start Rojo server |
-| `make build` | Build place → `game.rbxl` |
 
 ## Project Structure
 
