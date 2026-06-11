@@ -8,6 +8,8 @@ Roblox game developed with Rojo for local development and live-syncing to Roblox
 - Run `./bootstrap.sh` after cloning to install Rojo and the Studio plugin automatically.
 - Rojo v7.6.1 is pinned in `rokit.toml`.
 
+> **Claude:** On a fresh clone or first conversation in this project, prompt the user to run `/roblox-setup` to complete the environment setup.
+
 ## Key Commands
 - `make serve` - Start Rojo server
 - `rojo plugin install` - Install/update the Rojo plugin in Roblox Studio
