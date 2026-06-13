@@ -55,8 +55,8 @@ Scripts in `ServerStorage/AssetGenerators/` create game assets programmatically.
 
 ```lua
 -- Execute in Roblox command bar:
-local gen = require(game.ServerStorage.AssetGenerators.Models.TowerModelGenerator)
-gen.createBasicTower().Parent = workspace
+local gen = require(game.ServerStorage.AssetGenerators.Models.CharacterModelGenerator)
+gen.createCharacter().Parent = workspace
 ```
 
 Assets are organized by type (`GUI/`, `Models/`, `Parts/`, `Tools/`). When Claude generates a new asset type, it should create or update the relevant generator script — never hardcode asset structure in game logic.
@@ -71,9 +71,8 @@ Assets are organized by type (`GUI/`, `Models/`, `Parts/`, `Tools/`). When Claud
 
 ## Key Conventions
 
-- **Model Names = Config Keys**: Tower and enemy model names in Studio must exactly match their keys in `GameConfig.lua`.
-- **Runtime State in Attributes**: Store dynamic state (Health, MoveSpeed, Range, etc.) using Roblox attributes, not custom properties.
-- **Waypoint Naming**: Number path waypoints in ascending order (`001`, `002`, `003`, ...) for consistent enemy pathing.
+- **Model Names = Config Keys**: Entity model names in Studio must exactly match their keys in `GameConfig.lua`.
+- **Runtime State in Attributes**: Store dynamic state (Health, MoveSpeed, etc.) using Roblox attributes, not custom properties.
 - **Server Authority**: All game logic (combat, spawning, economy) runs server-side. Clients handle only UI and input.
 - **File Naming**: Server scripts end with `.server.server.lua`, client scripts with `.client.client.lua` for correct Rojo syncing.
 

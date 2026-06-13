@@ -1,31 +1,30 @@
 -- Central configuration for all game settings.
--- Tower/enemy model names in Studio must match the keys used here.
+-- Add your game-specific config tables here and require this module wherever needed.
 
 local GameConfig = {}
 
--- Example tower config structure:
--- GameConfig.Towers = {
---   BasicTower = {
---     Cost = 100,
---     Damage = 10,
---     Range = 20,
---     FireRate = 1.0,
+-- Example entity config structure:
+-- GameConfig.Characters = {
+--   Hero = {
+--     MaxHealth = 100,
+--     MoveSpeed = 16,
+--     JumpPower = 50,
 --   },
 -- }
 
-GameConfig.Towers = {}
+-- Entities: define stats for any game actors (players, NPCs, mobs, vehicles, etc.)
+GameConfig.Characters = {}
 
-GameConfig.Enemies = {}
+-- Items: weapons, tools, collectibles, power-ups
+GameConfig.Items = {}
 
-GameConfig.Waves = {}
+-- Rounds/sessions: duration, scoring, win conditions
+GameConfig.Rounds = {}
 
-GameConfig.Map = {
-  WaypointFolder = "Waypoints", -- Folder name inside the map model containing waypoints
-}
+-- World: named constants tied to the map or environment
+GameConfig.World = {}
 
-GameConfig.Economy = {
-  StartingGold = 200,
-  BaseGoldPerKill = 10,
-}
+-- Economy: any in-game currency or resource values
+GameConfig.Economy = {}
 
 return GameConfig
