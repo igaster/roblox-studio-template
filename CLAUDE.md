@@ -88,3 +88,13 @@ Assets are organized by type (`GUI/`, `Models/`, `Parts/`, `Tools/`). When Claud
 - **Error Handling**: Use `warn()` for recoverable issues, `error()` for fatal ones. Handle edge cases to prevent crashes.
 - **Performance**: Avoid unnecessary work in frequently called code (e.g., per-frame loops, `Heartbeat`).
 - **Commits**: Meaningful messages, commit frequently, focus on `src/` changes.
+
+## Testing
+
+Three complementary tiers — headless Lune unit tests, an in-engine smoke test, and a
+manual playtest checklist. See the `roblox-test` skill for the full pipeline and how
+to run each tier (also invokable manually with `/roblox-test`).
+
+**Workflow rule:** run Tier 1 after every logic change; request Tier 2 when
+classes/generators change; keep Tier 3 (`docs/TESTING.md`) updated per milestone.
+Never start a new milestone without explicit user confirmation.

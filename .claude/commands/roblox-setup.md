@@ -1,19 +1,19 @@
 Set up this Roblox game project from scratch. Follow these steps in order, reporting progress after each one.
 
-## Step 1 — Check Rojo
+## Step 1 — Check toolchain (Rojo, Lune)
 
-Run `rojo --version` in PowerShell.
+Run `rojo --version` and `lune --version` in PowerShell.
 
-- If Rojo is already installed (any version): note the version, skip to Step 3.
-- If not found: proceed to Step 2.
+- If both are already installed (any version): note the versions, skip to Step 3.
+- If either is missing: proceed to Step 2.
 
-## Step 2 — Install Rokit + Rojo
+## Step 2 — Install Rokit + toolchain
 
-Rokit is only needed if Rojo is not already installed.
+Rokit is only needed if Rojo or Lune is not already installed.
 
-1. Pause and tell the user: "Rojo is not installed. Please install Rokit from https://github.com/rojo-rbx/rokit/releases/latest, then run `! rokit --version` to confirm it works."
+1. Pause and tell the user: "Rojo/Lune is not installed. Please install Rokit from https://github.com/rojo-rbx/rokit/releases/latest, then run `! rokit --version` to confirm it works."
 2. Wait for user confirmation.
-3. Run `rokit install` to install Rojo via `rokit.toml`.
+3. Run `rokit install` to install Rojo and Lune via `rokit.toml`.
 
 ## Step 3 — Install Rojo Studio Plugin
 
@@ -21,13 +21,20 @@ Run: `rojo plugin install`
 
 This installs the Rojo plugin into Roblox Studio.
 
-## Step 4 — Name the game
+## Step 4 — Verify headless tests run
+
+Run: `lune run tests/run.lua`
+
+This confirms Lune resolved correctly and the Tier 1 test harness works out of the
+box. Report the pass/fail summary; if it fails, stop and debug before continuing.
+
+## Step 5 — Name the game
 
 Ask the user: "What should the game be named?"
 
 Wait for their answer, then update `default.project.json` — replace the value of the top-level `"name"` field with the user's answer.
 
-## Step 5 — Start the Rojo server
+## Step 6 — Start the Rojo server
 
 Run the server in a new window so the terminal stays free:
 
@@ -37,7 +44,7 @@ Start-Process -FilePath "rojo" -ArgumentList "serve", "default.project.json" -Wi
 
 The server listens on `localhost:34872`.
 
-## Step 6 — Connect Studio (user action required)
+## Step 7 — Connect Studio (user action required)
 
 Pause and give the user these instructions:
 
@@ -47,7 +54,7 @@ Pause and give the user these instructions:
 
 Wait for the user to confirm they are connected before proceeding.
 
-## Step 7 — Done
+## Step 8 — Done
 
 Report that setup is complete. Remind the user:
 - Edit Lua files in VS Code — changes sync to Studio automatically.
