@@ -56,6 +56,12 @@ eq("stageForRatio 1 -> 5", ExampleMath.stageForRatio(1, 5), 5)
 eq("stageForRatio 0.5 -> 3", ExampleMath.stageForRatio(0.5, 5), 3)
 eq("stageForRatio clamps >1", ExampleMath.stageForRatio(2, 5), 5)
 
+-- ---- CI smoke check -------------------------------------------------------
+-- Dummy assertion to confirm the CI workflow actually executes this file.
+-- Safe to remove once CI is verified working.
+print("CI smoke check")
+eq("dummy: 1 + 1", 1 + 1, 2)
+
 -- ---- summary -------------------------------------------------------------
 print(string.format("\n%d passed, %d failed", passed, failed))
 if failed > 0 then

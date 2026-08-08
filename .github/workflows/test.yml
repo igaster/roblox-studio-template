@@ -1,0 +1,20 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lune-tests:
+    name: Headless unit tests (Lune)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rokit (Rojo, Lune)
+        uses: CompeyDev/setup-rokit@v0.2.1
+
+      - name: Run tests
+        run: lune run tests/run.lua
