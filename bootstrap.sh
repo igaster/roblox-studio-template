@@ -5,11 +5,14 @@
 
 set -e
 
-echo "==> Installing toolchain (Rojo) via Rokit..."
+echo "==> Installing toolchain (Rojo, Lune) via Rokit..."
 rokit install
 
 echo "==> Installing Rojo plugin into Roblox Studio..."
 rojo plugin install
+
+echo "==> Verifying headless test setup (Lune)..."
+lune run tests/run.lua
 
 echo ""
 echo "Done. Next steps:"
