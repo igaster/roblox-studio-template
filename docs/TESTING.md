@@ -5,7 +5,7 @@ Three tiers of checks, from automatic → manual. See the **Testing** section of
 
 ---
 
-## Tier 2 — Headless unit tests (Lune)
+## Tier 1 — Headless unit tests (Lune)
 
 Covers **pure logic** (math, economy, grid, formulas) with no Roblox Studio.
 
@@ -19,7 +19,7 @@ lune run tests/run.lua
 
 ---
 
-## Tier 3 — In-engine integration smoke test
+## Tier 2 — In-engine integration smoke test
 
 Drives the **real classes** with real Instances inside Studio, fast-forwarding any
 time-based state and asserting the full gameplay loop.
@@ -37,7 +37,7 @@ Run it whenever the logic in your classes or asset generators changes.
 
 ---
 
-## Tier 4 — Manual playtest checklist
+## Tier 3 — Manual playtest checklist
 
 Manual, inside Studio (`make serve` → Rojo connect → **Play**). For everything the
 automated tests can't catch: UI/input, visuals, multiplayer isolation.

@@ -93,7 +93,7 @@ Assets are organized by type (`GUI/`, `Models/`, `Parts/`, `Tools/`). When Claud
 
 Three complementary tiers. Prefer the cheapest tier that can catch a given class of bug; keep game logic testable by isolating it from the engine.
 
-### Tier 2 — Headless unit tests (Lune)
+### Tier 1 — Headless unit tests (Lune)
 Pure gameplay logic (math, economy, grid, formulas) lives in **dependency-free modules** under
 `ReplicatedStorage/Modules/` — no `game:GetService`, no `Instance.new`, no Roblox datatypes
 (`Vector3`/`Color3`). Classes/generators delegate to these modules so the formula has one source of
@@ -108,7 +108,7 @@ lune run tests/run.lua   # from the project root; exits non-zero on failure
 - `Modules/ExampleMath.lua` + its assertions in `tests/run.lua` are a starting template — replace
   them with your game's real modules as you build.
 
-### Tier 3 — In-engine integration smoke test
+### Tier 2 — In-engine integration smoke test
 A ModuleScript at `ServerScriptService/SmokeTest.lua` (no `.server`, so it never auto-runs) drives the
 **real** classes with real Instances, fast-forwards time-based state, and asserts the full gameplay loop.
 Requires the Roblox runtime, so **the user runs it** in the Studio command bar (edit mode, no Play):
@@ -120,9 +120,9 @@ require(game.ServerScriptService.SmokeTest).run()
 Expected: per-step `PASS` lines and `SMOKE TEST OK` in Output. Claude asks the user to run this after
 changes to classes or asset generators, and extends it as new systems land.
 
-### Tier 4 — Manual playtest checklist
+### Tier 3 — Manual playtest checklist
 `docs/TESTING.md` holds step-by-step manual checks (UI/input, visuals, multiplayer isolation) that
 automation can't cover. Add a section per milestone as it completes.
 
-**Workflow rule:** run Tier 2 after every logic change; request Tier 3 when classes/generators change;
-keep Tier 4 updated per milestone. Never start a new milestone without explicit user confirmation.
+**Workflow rule:** run Tier 1 after every logic change; request Tier 2 when classes/generators change;
+keep Tier 3 updated per milestone. Never start a new milestone without explicit user confirmation.
