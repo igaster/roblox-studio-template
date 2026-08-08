@@ -1,39 +1,9 @@
 # Testing Guide
 
 Three tiers of checks, from automatic → manual. See the **Testing** section of
-`CLAUDE.md` for the workflow rules that tie them together.
-
----
-
-## Tier 1 — Headless unit tests (Lune)
-
-Covers **pure logic** (math, economy, grid, formulas) with no Roblox Studio.
-
-```sh
-lune run tests/run.lua
-```
-
-- Lives in dependency-free modules under `ReplicatedStorage/Modules/`.
-- Exits with code 1 on failure → suitable for pre-commit / CI.
-- Run it after every change to a formula or other pure logic.
-
----
-
-## Tier 2 — In-engine integration smoke test
-
-Drives the **real classes** with real Instances inside Studio, fast-forwarding any
-time-based state and asserting the full gameplay loop.
-
-**How to run** (Studio command bar, with Rojo connected):
-
-```lua
-require(game.ServerScriptService.SmokeTest).run()
-```
-
-Check the Output window for per-step PASS/FAIL and `SMOKE TEST OK` at the end.
-It is a ModuleScript — it never auto-runs in a normal play session.
-
-Run it whenever the logic in your classes or asset generators changes.
+`CLAUDE.md` and the `roblox-test` skill for Tier 1 (headless Lune unit tests) and
+Tier 2 (in-engine smoke test) — how to run them and when. This doc covers Tier 3,
+the manual playtest checklist, which lives only here.
 
 ---
 
