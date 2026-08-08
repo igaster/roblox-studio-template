@@ -74,7 +74,7 @@ Assets are organized by type (`GUI/`, `Models/`, `Parts/`, `Tools/`). When Claud
 - **Model Names = Config Keys**: Entity model names in Studio must exactly match their keys in `GameConfig.lua`.
 - **Runtime State in Attributes**: Store dynamic state (Health, MoveSpeed, etc.) using Roblox attributes, not custom properties.
 - **Server Authority**: All game logic (combat, spawning, economy) runs server-side. Clients handle only UI and input.
-- **File Naming**: Server scripts end with `.server.server.lua`, client scripts with `.client.client.lua` for correct Rojo syncing.
+- **File Naming**: Server scripts end with `.server.lua` (→ `Script`), client scripts with `.client.lua` (→ `LocalScript`) for correct Rojo syncing — verify with `rojo sourcemap default.project.json` if unsure.
 
 ## Coding Standards
 

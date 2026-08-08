@@ -35,6 +35,22 @@ bootstrap. Steps 1 and 3 below are manual/GUI and can't be scripted.
    - Full reference: [create.roblox.com/docs/studio/mcp](https://create.roblox.com/docs/studio/mcp).
 3. **Verify** with a trivial call, e.g. `execute_luau` with `print("mcp ok")` in
    Server context, then `get_console_output` and confirm the line appears.
+   **This only proves the MCP channel itself works — it does not prove Rojo's
+   file sync into the DataModel is live.** Those are two independent
+   connections that can be up or down separately. Also confirm sync
+   specifically: `search_game_tree` or `inspect_instance` for a file you know
+   exists in source (e.g. `ReplicatedStorage.GameConfig`). If it's missing —
+   even though `execute_luau`/`get_console_output` both work fine — sync is
+   down, not "the project has no content yet." This failure mode is easy to
+   miss because nothing errors or times out; it just silently returns an
+   empty/stale tree. A human needs to reconnect the Rojo plugin (Rojo panel →
+   Connect → `localhost:34872`) — no MCP tool can click Studio's own plugin
+   toolbar to do this.
+   **Don't restart `rojo serve`** to pick up a project-file change (e.g. a
+   rename in `default.project.json`) if you're not certain sync is already
+   live — the plugin polls and live-reloads project changes on its own, and
+   restarting the server process can silently drop an already-working plugin
+   connection, trading a working setup for a broken one.
 
 If any of these tools aren't available in this session, tell the user setup is
 missing or disconnected rather than falling back silently — the manual fallback

@@ -48,6 +48,13 @@ Parse for per-step `PASS`/`FAIL` lines and the final `SMOKE TEST OK` /
 no Play) if MCP isn't set up or isn't connected this session — don't silently skip
 Tier 2, say why you're falling back.
 
+MCP being "connected" isn't binary — see `roblox-studio-mcp`'s sync-verification
+note. `execute_luau`/`get_console_output` can both work fine while Rojo's file
+sync into the DataModel is actually dead, which looks like "nothing's here yet,"
+not like a failure. Confirm sync (not just the MCP channel) before trusting a
+Tier 2 run — a real one silently didn't run at all despite every individual
+call succeeding.
+
 Request/run this after changes to classes or asset generators, and extend the
 script as new systems land.
 
