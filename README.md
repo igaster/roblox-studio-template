@@ -10,6 +10,7 @@ A minimal project template for Roblox games using [Rojo](https://rojo.space/) fo
 - `GameConfig.lua` as a single source of truth for all game settings
 - A three-tier testing setup (headless Lune unit tests, in-engine smoke test, manual
   playtest checklist) — see `docs/TESTING.md`
+- `docs/design/` — a dedicated, empty-by-default home for the game's own design docs
 - `CLAUDE.md` with project rules for AI-assisted development
 - `.gitignore` for Roblox artifacts
 

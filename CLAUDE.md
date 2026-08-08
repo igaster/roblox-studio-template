@@ -89,6 +89,13 @@ Assets are organized by type (`GUI/`, `Models/`, `Parts/`, `Tools/`). When Claud
 - **Performance**: Avoid unnecessary work in frequently called code (e.g., per-frame loops, `Heartbeat`).
 - **Commits**: Meaningful messages, commit frequently, focus on `src/` changes.
 
+## Documentation
+
+- Game design docs (GDD, feature specs, lore, milestone notes) live in `docs/design/`.
+- `CLAUDE.md` is engineering conventions only; `docs/TESTING.md` is the testing
+  checklist only. Game design content never goes in either — new design docs go in
+  `docs/design/`, and this file is not the place to record them.
+
 ## Testing
 
 Three complementary tiers — headless Lune unit tests, an in-engine smoke test, and a
