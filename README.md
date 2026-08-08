@@ -4,10 +4,12 @@ A minimal project template for Roblox games using [Rojo](https://rojo.space/) fo
 
 ## What's Included
 
-- Rojo 7.6.1 pinned via Rokit
+- Rojo 7.6.1 and Lune, pinned via Rokit
 - `src/shared/` for modules synced into both places
 - `ServerStorage/AssetGenerators/` pattern for programmatic asset creation
 - `GameConfig.lua` as a single source of truth for all game settings
+- A three-tier testing setup (headless Lune unit tests, in-engine smoke test, manual
+  playtest checklist) — see `docs/TESTING.md`
 - `CLAUDE.md` with project rules for AI-assisted development
 - `.gitignore` for Roblox artifacts
 
@@ -23,7 +25,7 @@ A minimal project template for Roblox games using [Rojo](https://rojo.space/) fo
 gh repo create my-game --template igaster/roblox-studio-template
 cd my-game
 
-# 2. Bootstrap (installs Rojo + Studio plugin)
+# 2. Bootstrap (installs Rojo + Lune + Studio plugin, runs the headless tests)
 ./bootstrap.sh          # mac/linux
 bootstrap.bat           # windows
 
@@ -40,6 +42,7 @@ make serve
 | Command | Description |
 |---|---|
 | `make serve` | Start Rojo server |
+| `make test` | Run headless Lune unit tests |
 
 ## Project Structure
 

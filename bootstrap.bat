@@ -3,7 +3,7 @@
 :: Prerequisites: Rokit must already be installed on your machine.
 :: https://github.com/rojo-rbx/rokit
 
-echo =^> Installing toolchain (Rojo) via Rokit...
+echo =^> Installing toolchain (Rojo, Lune) via Rokit...
 rokit install
 if %ERRORLEVEL% neq 0 (
     echo ERROR: rokit install failed. Is Rokit installed?
@@ -14,6 +14,13 @@ echo =^> Installing Rojo plugin into Roblox Studio...
 rojo plugin install
 if %ERRORLEVEL% neq 0 (
     echo ERROR: rojo plugin install failed.
+    exit /b %ERRORLEVEL%
+)
+
+echo =^> Verifying headless test setup (Lune)...
+lune run tests/run.lua
+if %ERRORLEVEL% neq 0 (
+    echo ERROR: lune run tests/run.lua failed.
     exit /b %ERRORLEVEL%
 )
 
