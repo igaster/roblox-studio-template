@@ -1,6 +1,6 @@
 -- In-engine integration smoke test. Drives the REAL classes / asset generators with
 -- real Instances inside the Roblox runtime and asserts the full gameplay loop end to
--- end. Complements the headless Lune tests (tests/run.lua), which cover only the pure
+-- end. Complements the headless Lune tests (tests/suite.lua), which cover only the pure
 -- math.
 --
 -- This is a ModuleScript (no ".server") so it never auto-runs. Run it manually from

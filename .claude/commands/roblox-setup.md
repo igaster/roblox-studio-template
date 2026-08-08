@@ -23,7 +23,7 @@ This installs the Rojo plugin into Roblox Studio.
 
 ## Step 4 — Verify headless tests run
 
-Run: `lune run tests/run.lua`
+Run: `lune run tests/suite.lua`
 
 This confirms Lune resolved correctly and the Tier 1 test harness works out of the
 box. Report the pass/fail summary; if it fails, stop and debug before continuing.

@@ -12,7 +12,7 @@ echo "==> Installing Rojo plugin into Roblox Studio..."
 rojo plugin install
 
 echo "==> Verifying headless test setup (Lune)..."
-lune run tests/run.lua
+lune run tests/suite.lua
 
 echo ""
 echo "Done. Next steps:"

@@ -3,12 +3,15 @@
 -- ReplicatedStorage/Modules that have no Roblox dependencies run here under Lune
 -- with no Studio needed.
 --
--- Run:  lune run tests/run.lua      (from the project root)
+-- Run:  lune run tests/suite.lua    (from the project root)
 --
 -- Exits with code 1 if any assertion fails, so it can gate CI / pre-commit.
 --
 -- This ships wired to Modules/ExampleMath as a starting template. Point it at your
 -- real `*Math` modules and grow the assertions as you add gameplay logic.
+--
+-- The ExampleMath block and the CI smoke check below are sample tests kept for
+-- reference — safe to delete once real assertions replace them.
 
 local process = require("@lune/process")
 
@@ -55,6 +58,12 @@ eq("stageForRatio 0 -> 1", ExampleMath.stageForRatio(0, 5), 1)
 eq("stageForRatio 1 -> 5", ExampleMath.stageForRatio(1, 5), 5)
 eq("stageForRatio 0.5 -> 3", ExampleMath.stageForRatio(0.5, 5), 3)
 eq("stageForRatio clamps >1", ExampleMath.stageForRatio(2, 5), 5)
+
+-- ---- CI smoke check -------------------------------------------------------
+-- Dummy assertion kept as a minimal sample of the pattern — replace with a real
+-- check or delete once the suite has genuine assertions of its own.
+print("CI smoke check")
+eq("dummy: 1 + 1", 1 + 1, 2)
 
 -- ---- summary -------------------------------------------------------------
 print(string.format("\n%d passed, %d failed", passed, failed))
