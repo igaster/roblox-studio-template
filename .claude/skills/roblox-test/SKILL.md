@@ -18,13 +18,13 @@ to these modules so the formula has one source of truth. Test them headlessly wi
 [Lune](https://github.com/lune-org/lune):
 
 ```sh
-lune run tests/run.lua   # from the project root; exits non-zero on failure
+lune run tests/suite.lua   # from the project root; exits non-zero on failure
 ```
 
 - **Run this yourself** after any change to pure logic — no Studio needed.
 - When adding logic, extract the pure part into a `*Math`/helper module and add
-  assertions to `tests/run.lua`.
-- `Modules/ExampleMath.lua` + its assertions in `tests/run.lua` are a starting
+  assertions to `tests/suite.lua`.
+- `Modules/ExampleMath.lua` + its assertions in `tests/suite.lua` are a starting
   template — replace them with the game's real modules as they're built.
 
 ## Tier 2 — In-engine integration smoke test

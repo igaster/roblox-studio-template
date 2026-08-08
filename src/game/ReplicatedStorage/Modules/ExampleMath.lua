@@ -1,7 +1,7 @@
 --!strict
 -- Example of a PURE gameplay-logic module: no `game:GetService`, no `Instance.new`,
 -- no Roblox datatypes (Vector3/Color3). Because it only touches plain Lua values it
--- can be unit-tested headlessly with Lune (see tests/run.lua) — no Studio required.
+-- can be unit-tested headlessly with Lune (see tests/suite.lua) — no Studio required.
 --
 -- Delete this module (and its tests) once you have real `*Math` modules; it exists
 -- only to demonstrate the pattern the Testing section of CLAUDE.md describes.

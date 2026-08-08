@@ -18,9 +18,9 @@ if %ERRORLEVEL% neq 0 (
 )
 
 echo =^> Verifying headless test setup (Lune)...
-lune run tests/run.lua
+lune run tests/suite.lua
 if %ERRORLEVEL% neq 0 (
-    echo ERROR: lune run tests/run.lua failed.
+    echo ERROR: lune run tests/suite.lua failed.
     exit /b %ERRORLEVEL%
 )
 
