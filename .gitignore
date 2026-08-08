@@ -8,3 +8,11 @@
 
 # Rojo sourcemap (generated, not source)
 sourcemap.json
+
+# Sandbox: local git clones used to dogfood the framework (orchestrator/subagent
+# game-building exercises). Never part of the template itself.
+/sandbox/
+
+# Orchestrator-only skill for the dogfooding process above — meta-tooling for
+# developing this framework, not something a real template clone should inherit.
+/.claude/skills/framework-dogfooding/

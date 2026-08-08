@@ -8,7 +8,7 @@ Roblox game developed with Rojo for local development and live-syncing to Roblox
 - Run `./bootstrap.sh` after cloning to install Rojo and the Studio plugin automatically.
 - Rojo v7.6.1 is pinned in `rokit.toml`.
 
-> **Claude:** On a fresh clone or first conversation in this project, prompt the user to run `/roblox-setup` to complete the environment setup.
+> **Claude:** On a fresh clone or first conversation in this project, prompt the user to run `/roblox-initialize` to complete the environment setup.
 
 ## Key Commands
 - `make serve` - Start Rojo server
@@ -105,3 +105,12 @@ to run each tier (also invokable manually with `/roblox-test`).
 **Workflow rule:** run Tier 1 after every logic change; request Tier 2 when
 classes/generators change; keep Tier 3 (`docs/TESTING.md`) updated per milestone.
 Never start a new milestone without explicit user confirmation.
+
+## Agent-driven Studio tools
+
+When Studio is open with the Rojo plugin connected, the agent can drive it directly
+instead of asking the user to click things — see the `roblox-studio-mcp` skill for
+setup/conventions, `roblox-capture` for screenshotting an asset or scene, and
+`roblox-playtest` for scripted gameplay verification. All three require a human to
+already have Studio open with the place loaded; the agent cannot launch Studio
+itself from a cold start.

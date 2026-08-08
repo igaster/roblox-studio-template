@@ -31,20 +31,47 @@ lune run tests/suite.lua   # from the project root; exits non-zero on failure
 
 A ModuleScript at `ServerScriptService/SmokeTest.lua` (no `.server`, so it never
 auto-runs) drives the **real** classes with real Instances, fast-forwards
-time-based state, and asserts the full gameplay loop. Requires the Roblox runtime,
-so **ask the user to run it** in the Studio command bar (edit mode, no Play):
+time-based state, and asserts the full gameplay loop. Requires the Roblox runtime.
+
+**Preferred: run it yourself via the `roblox-studio-mcp` skill.** If the MCP server
+is set up and connected, call `execute_luau` (Server context) with:
 
 ```lua
 require(game.ServerScriptService.SmokeTest).run()
 ```
 
-Expected: per-step `PASS` lines and `SMOKE TEST OK` in Output. Request this after
-changes to classes or asset generators, and extend the script as new systems land.
+then `get_console_output` to retrieve the result — no need to involve the user.
+Parse for per-step `PASS`/`FAIL` lines and the final `SMOKE TEST OK` /
+`SMOKE TEST FAILED` line, same contract as Tier 1's exit code.
+
+**Fallback: ask the user to run it manually** in the Studio command bar (edit mode,
+no Play) if MCP isn't set up or isn't connected this session — don't silently skip
+Tier 2, say why you're falling back.
+
+Request/run this after changes to classes or asset generators, and extend the
+script as new systems land.
 
 ## Tier 3 — Manual playtest checklist
 
-`docs/TESTING.md` holds step-by-step manual checks (UI/input, visuals, multiplayer
-isolation) that automation can't cover. Add a section per milestone as it completes.
+`docs/TESTING.md` holds step-by-step checks that don't fit a fixed Tier 2 script.
+Not all of them are equally automatable — split by what MCP can actually reach:
+
+- **Single-player UI/input scenarios** ("does this button work", "does the chest
+  open on click") — delegate to the `roblox-playtest` skill instead of asking the
+  user. It drives a real Play session via MCP (input simulation +
+  `get_console_output`/`inspect_instance`) and reports pass/fail with evidence.
+  Note the checklist item as "run via `roblox-playtest`" once delegated.
+- **Visual review** ("does this look right") — `roblox-capture`/`roblox-playtest`
+  can pull a `screen_capture` for the agent to judge, but there's no baseline-diff
+  tooling in this repo, so it's a judgment call each time, not a real pass/fail
+  assertion. Still requires human sign-off for subjective calls.
+- **Multiplayer isolation** (state not leaking between players) — **stays fully
+  manual.** MCP drives one Studio session with one input stream; it cannot spin up
+  a second real client. Never claim this class of check is covered by MCP.
+
+Add a section per milestone as it completes, and mark which items are
+`roblox-playtest`-delegable vs. genuinely manual so future sessions don't have to
+re-derive it.
 
 ## Workflow rule
 

@@ -1,6 +1,6 @@
 ---
 name: roblox-asset-generators
-description: Use when adding a new visual/3D Roblox asset (model, tool, part, GUI) to a Rojo-synced project — e.g. "add a sword tool", "spawn a chest model", "create a new NPC model" — and there's no existing Studio instance to clone from yet.
+description: Use when adding, prototyping, or shipping a visual/3D Roblox asset (model, tool, part, GUI) — e.g. "add a sword tool", "spawn a chest model", "create a new NPC model", "prototype a few weapon looks" — and there's no existing Studio instance to clone from yet. Covers both quick MCP-generated prototypes and the version-controlled generator-module pattern for shipping.
 ---
 
 # Roblox Asset Generators
@@ -12,6 +12,30 @@ aren't version-controlled. The workaround: build the asset procedurally in a
 Luau module (a "generator"), so its structure lives in git like any other code.
 The generator returns a plain `Instance` — it never parents itself, and it
 never carries gameplay state.
+
+## Prototyping (MCP generative tools) vs. shipping (this skill)
+
+Two legitimate paths for getting a new asset, for different purposes:
+
+- **Prototyping/iterating on a look**: use `roblox-studio-mcp`'s generative tools
+  (`generate_mesh`, `generate_material`, `generate_procedural_model`) to quickly try
+  shapes, materials, or concepts directly in Studio. Fast, good for exploring
+  options with the user, but the result is **not version-controlled, not
+  deterministic, and not reviewable** — it lives only in the DataModel (or an
+  uploaded asset), not in git.
+- **Shipping/final asset**: once a design is picked (from a generative prototype,
+  a reference image, or a plain description), convert it into a hand-written
+  generator module following this skill's pattern below. This is what actually
+  gets committed — regenerable, diffable, testable, and consistent with the rest
+  of the codebase's "behavior = code" rule.
+
+**Rule of thumb: prototype in B, ship in A.** Never let a generative-tool result
+become the permanent asset without converting it to a generator module first —
+even a rough procedural approximation (primitives standing in for the generated
+shape, config-driven dimensions) is preferable to an asset with no source of
+truth in git. If a generated mesh/material is genuinely needed as-is (too complex
+to reasonably approximate procedurally), that's a deliberate exception — flag it
+to the user rather than silently treating it as shipped.
 
 ## Directory Convention
 
