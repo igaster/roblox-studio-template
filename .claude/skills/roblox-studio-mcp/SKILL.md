@@ -52,6 +52,18 @@ bootstrap. Steps 1 and 3 below are manual/GUI and can't be scripted.
    just silently returns an empty/stale tree. A human needs to reconnect the
    Rojo plugin (Rojo panel → Connect → `localhost:34872`) — no MCP tool can
    click Studio's own plugin toolbar to do this.
+
+   **A separate, unrelated failure mode that looks similar but isn't a sync
+   problem at all**: if you edit a module that's already been `require()`'d
+   earlier in the current Edit-mode session, a repeated `execute_luau` call
+   re-requiring it can still return the *old* value — this is Roblox's own
+   `require()` cache (per script session, not re-evaluated on a live `Source`
+   change), nothing to do with Rojo. Distinguish it by checking `Source`
+   directly (or `loadstring(source)()`) — if that shows the current value but
+   `require()` doesn't, it's the cache, not sync. Fix: start a fresh Play
+   session and re-check via `execute_luau` in **Server** context — confirmed
+   directly to clear it. Don't report this as a sync blocker requiring a
+   human reconnect; it isn't one.
    **Never restart `rojo serve` as an attempted fix, for any reason —
    including when sync is already confirmed broken.** This is not a
    "don't do it if unsure" guideline, it's an absolute: restarting the server
