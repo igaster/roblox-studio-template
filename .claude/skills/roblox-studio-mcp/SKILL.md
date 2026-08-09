@@ -52,15 +52,20 @@ bootstrap. Steps 1 and 3 below are manual/GUI and can't be scripted.
    just silently returns an empty/stale tree. A human needs to reconnect the
    Rojo plugin (Rojo panel → Connect → `localhost:34872`) — no MCP tool can
    click Studio's own plugin toolbar to do this.
-   **Don't restart `rojo serve`** to pick up a project-file change (e.g. a
-   rename in `default.project.json`) if you're not certain sync is already
-   live — the plugin polls and live-reloads project changes on its own, and
-   restarting the server process **always** drops any existing plugin
-   connection: each `rojo serve` start mints a new session ID, the plugin
-   detects the mismatch, shows **"Server changed id,"** and disconnects —
-   confirmed directly, twice, in the same session. It does not auto-reconnect;
-   a human must click Connect again. Treat any `rojo serve` restart as having
-   just broken the connection, not as a neutral operation.
+   **Never restart `rojo serve` as an attempted fix, for any reason —
+   including when sync is already confirmed broken.** This is not a
+   "don't do it if unsure" guideline, it's an absolute: restarting the server
+   process cannot repair a plugin-side disconnect, because the disconnect
+   lives in Studio's plugin, not the server. All a restart does is mint a new
+   session ID, which either (a) drops a working connection ("Server changed
+   id," no auto-reconnect — confirmed directly) or (b) does nothing useful if
+   sync was already dead, while making the eventual manual reconnect no
+   cheaper. Confirmed twice: once dropping a live connection, once as a
+   subagent's diagnostic attempt on an already-broken one that (predictably)
+   didn't help. If you determine sync is broken, **stop and report it as a
+   blocker** — don't try to fix it yourself by touching the server process.
+   The plugin also polls and live-reloads project-file changes on its own, so
+   there was never a legitimate reason to restart for that either.
 
 If any of these tools aren't available in this session, tell the user setup is
 missing or disconnected rather than falling back silently — the manual fallback

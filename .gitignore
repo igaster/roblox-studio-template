@@ -16,3 +16,6 @@ sourcemap.json
 # Orchestrator-only skill for the dogfooding process above — meta-tooling for
 # developing this framework, not something a real template clone should inherit.
 /.claude/skills/framework-dogfooding/
+
+# Dogfooding-only subagent personas — same reasoning as framework-dogfooding above.
+/.claude/agents/critic.md
