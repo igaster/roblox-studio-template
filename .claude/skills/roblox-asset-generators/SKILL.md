@@ -13,6 +13,14 @@ Luau module (a "generator"), so its structure lives in git like any other code.
 The generator returns a plain `Instance` — it never parents itself, and it
 never carries gameplay state.
 
+## Visual consistency across assets
+
+If `docs/design/STYLE_GUIDE.md` exists in the project, it's the canonical
+source for colors/materials — read it before choosing any `Color3`/`Material`
+value in a new generator, rather than picking freely per-asset. A project
+without one is free-form; don't require a style guide to exist, just defer to
+it when it does.
+
 ## Prototyping (MCP generative tools) vs. shipping (this skill)
 
 Two legitimate paths for getting a new asset, for different purposes:
