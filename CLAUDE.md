@@ -72,7 +72,8 @@ Assets are organized by type (`GUI/`, `Models/`, `Parts/`, `Tools/`). When Claud
 ## Key Conventions
 
 - **Model Names = Config Keys**: Entity model names in Studio must exactly match their keys in `GameConfig.lua`.
-- **Runtime State in Attributes**: Store dynamic state (Health, MoveSpeed, etc.) using Roblox attributes, not custom properties.
+- **Runtime State in Attributes**: Store dynamic state (Health, MoveSpeed, etc.) using Roblox attributes, not custom properties. This isn't just a style rule — it's what makes state generically inspectable from outside the script that owns it (via `GetAttribute`/`GetAttributes()`), with no per-game debug code required. Any state a tester or another system would plausibly need to read live (current phase/round, a value at risk, whether an entity is active/occupied, health) belongs in an attribute on a well-known instance (the `Player`, or the entity itself) — not buried in a private table inside a `.server.lua` script, which is invisible from outside that script entirely.
+- **Interactable entities get a `CollectionService` tag**: anything a player can walk up to and interact with (enter, pick up, activate) should be tagged (e.g. `"Interactable"`) via `CollectionService:AddTag()` when it's created. This costs one line per entity and enables generic tooling — e.g. "teleport the player next to the nearest tagged interactable" — that works across any game without game-specific glue, since it doesn't need to know what the entity actually is.
 - **Server Authority**: All game logic (combat, spawning, economy) runs server-side. Clients handle only UI and input.
 - **File Naming**: Server scripts end with `.server.lua` (→ `Script`), client scripts with `.client.lua` (→ `LocalScript`) for correct Rojo syncing — verify with `rojo sourcemap default.project.json` if unsure.
 
@@ -105,6 +106,45 @@ to run each tier (also invokable manually with `/roblox-test`).
 **Workflow rule:** run Tier 1 after every logic change; request Tier 2 when
 classes/generators change; keep Tier 3 (`docs/TESTING.md`) updated per milestone.
 Never start a new milestone without explicit user confirmation.
+
+## Observability (TestHooks)
+
+`shared/TestHooks.lua` (synced to `ReplicatedStorage.Shared.TestHooks`) ships as part
+of this template — every game gets it for free, no per-game debug code to write.
+It exists because live-verifying gameplay (via `roblox-playtest`/the `critic` agent)
+kept stalling on two things: reaching the state worth testing, and finding signal in
+console output buried under unrelated noise. `require()` it wherever you already
+`require()` `GameConfig`.
+
+**Minimum setup — two calls, right where you already are:**
+
+1. `TestHooks.tagInteractable(instance)` — once, wherever you create anything a
+   player can walk up to and enter/use/collect (a vehicle, a chest, an NPC). One line.
+2. `TestHooks.log(category, message, data)` — at meaningful state transitions
+   (destroyed, collected, phase changed, scored). Use it *instead of* a plain
+   `warn()`/`print()` for anything a tester would plausibly care about — it still
+   prints, so nothing is lost, but it's also filterable afterward. This turns "the
+   critic infers a vehicle was destroyed because a part disappeared" into "the critic
+   reads an actual `{category="Collision", reason="hazard"}` event" — ground truth
+   instead of guesswork.
+
+Everything else below works automatically once those two conventions are followed —
+no additional code needed:
+
+| Function | Purpose |
+|---|---|
+| `TestHooks.tagInteractable(instance, tag?)` | Tag an entity as interactable (default tag `"Interactable"`). |
+| `TestHooks.log(category, message, data?)` | Record a structured, filterable event (also prints). |
+| `TestHooks.getEvents(sinceTime?, category?)` | Read back recorded events, filtered by time and/or category. |
+| `TestHooks.dumpState(tags?)` | Snapshot: every `Player`'s attributes, plus every tagged instance's position + attributes. Defaults to the `"Interactable"` tag. |
+| `TestHooks.teleportNear(player, tag?)` | Move a player's character next to the nearest tagged instance — no need to know its name or position in advance. |
+
+Server-authoritative like everything else here: call these from server-side code,
+and read results back via `execute_luau` on the **Server** datamodel — the event
+buffer lives in that VM's copy of the module, not the client's separate one.
+Full usage patterns (how the `critic` agent actually drives this) live in the
+`roblox-playtest` skill — read it there rather than reinventing the calling
+convention per game.
 
 ## Agent-driven Studio tools
 
