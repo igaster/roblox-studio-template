@@ -44,6 +44,15 @@ by the time a second MCP round-trip reads state back, several real seconds may h
 unattended entity can have already crashed, respawned, or moved past the thing you meant to
 observe.
 
+**This caveat is specifically about custom movement systems, not `character_navigation` itself.**
+Confirmed on a *different* game (speed-rush) using Roblox's stock Humanoid controller (no custom
+vehicle/physics): `character_navigation` worked correctly and produced real, verifiable
+movement — `Speed`/`WalkSpeed` attributes updated live and `HumanoidRootPart.Position` genuinely
+advanced as directed. The dividing line is whether the game reinvented movement (needs the
+remote-firing technique below) or uses the default character controller (try
+`character_navigation` first — it's simpler and has less to get wrong than reconstructing a
+remote call by hand).
+
 **Standard technique for this case**: skip character-input tools entirely and drive the
 gameplay-facing RemoteEvents directly — the same ones the real client script fires — via a
 single `execute_luau` call (Client datamodel, so you're firing as the actual player). Do the

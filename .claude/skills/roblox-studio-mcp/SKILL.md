@@ -97,6 +97,31 @@ not a silent one.
   target instance first (see `roblox-capture`).
 - **`start_stop_play`** — start or stop a real Play session (physics, character,
   full gameplay). Use for `roblox-playtest`, not for routine logic checks.
+  **Known failure mode**: can return `"Start play hasn't finished yet"` and get
+  stuck — confirmed by reproducing it independently (not just trusting a
+  subagent's claim): retrying `start`, retrying `stop`, and re-running
+  `set_active_studio` first all returned the identical error, with nothing new
+  in `get_console_output` and `get_studio_state` still reporting `Edit` mode
+  throughout. This looks like a stuck internal flag on the MCP/plugin side, not
+  something happening inside the Roblox engine — `execute_luau` and other tools
+  kept working fine the whole time, only `start_stop_play` was affected. No
+  agent-side recovery found. If this happens: don't loop retrying more than 2-3
+  times (matches the general "stop and report" guidance for stuck tool calls) —
+  report it as a blocker and fall back to whatever verification doesn't need a
+  live Play session (Tier 1, `search_game_tree`/`inspect_instance` state checks
+  in Edit mode) until a human can check Studio's own UI directly; MCP-side
+  retries alone did not resolve it. **Recovery confirmed (speed-rush,
+  2026-08-12)**: a human manually clicking Play in Studio's own UI worked
+  immediately even while the MCP connection still reported the stuck state
+  (`get_studio_state` lagged behind reality — reported `Edit` mode while a
+  real Play session was visibly running in the screenshot the human sent, and
+  `execute_luau`/`get_console_output` against `Server`/`Client` datamodels
+  worked fine once directed at the live session). A subsequent full Studio
+  restart then also let `start_stop_play` itself work normally again via MCP.
+  So two escalating recovery options, in order: (1) ask the human to click
+  Play directly and keep using other MCP tools against the resulting session
+  even if `get_studio_state` looks stale; (2) if that's not enough, a Studio
+  restart is the next step. Root cause still unconfirmed either way.
 - **`user_mouse_input` / `user_keyboard_input` / `character_navigation`** — simulate
   input during a Play session.
 - **`search_game_tree` / `inspect_instance`** — read the DataModel to confirm state

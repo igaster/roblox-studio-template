@@ -105,6 +105,22 @@ Rules the pattern depends on:
    template it produced) — it doesn't call `Instance.new` to build game
    objects itself. This is what keeps the asset regenerable and the logic
    testable independent of the visual.
+5. **A "create if missing" staging routine must actually be idempotent —
+   destroy and regenerate, don't just skip if something's already there.**
+   `Workspace` isn't Rojo-synced (`CLAUDE.md`: "Studio owns... placed
+   instances"), so anything a generator stages there (e.g. a design-time
+   `Workspace.AssetStage` folder) can get saved into the place file as-is.
+   A startup routine that only creates the staged asset `if not
+   Workspace:FindFirstChild(...)` will silently keep serving that *stale,
+   saved* version forever after — even once the generator itself is fixed
+   in source — since the "already exists" check short-circuits regeneration.
+   Confirmed live (speed-rush): a pre-refactor course (wrong tile names, no
+   gap/checkpoint/finish objects) persisted across multiple rounds of
+   correct source fixes for exactly this reason, and was mistaken for
+   several different bugs before the actual cause (stale Workspace content,
+   not the generator) was found. Always destroy any existing staged
+   instance before regenerating, every server start — don't skip based on
+   existence.
 
 ## Quick Reference
 
@@ -124,3 +140,7 @@ Rules the pattern depends on:
 - **Hardcoding a size/color/stat instead of reading it from `GameConfig`** —
   breaks the single-source-of-truth convention the rest of the codebase
   follows.
+- **A staging routine that only creates the asset "if missing"** — silently
+  keeps serving stale, previously-saved `Workspace` content forever after a
+  generator fix, since the existence check skips regeneration. Destroy and
+  regenerate unconditionally instead.
