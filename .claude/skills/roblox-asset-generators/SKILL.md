@@ -121,6 +121,28 @@ Rules the pattern depends on:
    not the generator) was found. Always destroy any existing staged
    instance before regenerating, every server start — don't skip based on
    existence.
+6. **Set `Anchored` explicitly on every generated `BasePart` — don't rely on
+   Roblox's `false` default.** An unanchored part falls under gravity the
+   moment Play starts. A `CanCollide = true` part usually settles against
+   other geometry after a small, easy-to-miss fall and still looks "fine."
+   A `CanCollide = false` part (a trigger pad, a visual marker, anything
+   non-solid) falls completely unobstructed and can cross
+   `workspace.FallenPartsDestroyHeight` (default -500) in just a few
+   seconds at default gravity — Roblox's built-in fallen-parts cleanup then
+   removes it. That removal fires `AncestryChanged` but **not** the
+   scripted `Destroying` event (it's an engine-level cleanup, not a Luau
+   `:Destroy()` call), which looks exactly like a mysterious, hard-to-debug
+   vanishing-instance bug — confirmed live (speed-rush): this cost an
+   entire investigation across two separate rounds, including several ruled-out
+   theories (`Workspace.StreamingEnabled`, code review of every `:Destroy()`
+   call site) before the actual cause (nothing had `Anchored = true` except
+   one part that happened to need it for an unrelated reason) was found.
+   `debug.traceback()` attached to the removal event will not help distinguish
+   this from a real `:Destroy()` call — Roblox event connections always run in
+   a fresh coroutine with no calling Luau stack above them. If every generated
+   `BasePart` sets `Anchored` explicitly (`true` for static/trigger geometry,
+   `false` only when the part is deliberately meant to be physics-driven),
+   this entire bug class can't occur.
 
 ## Quick Reference
 
@@ -144,3 +166,9 @@ Rules the pattern depends on:
   keeps serving stale, previously-saved `Workspace` content forever after a
   generator fix, since the existence check skips regeneration. Destroy and
   regenerate unconditionally instead.
+- **Forgetting `Anchored = true` on a generated `BasePart`** — it falls under
+  gravity, and if `CanCollide = false` it can fall far enough to trigger
+  Roblox's fallen-parts cleanup, silently vanishing with an `AncestryChanged`
+  event but no `Destroying` — a genuinely confusing bug to debug from the
+  symptom alone. Set `Anchored` explicitly on every generated part, don't
+  rely on the engine default.
