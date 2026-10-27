@@ -193,6 +193,13 @@ within 60 s", "reach business #3 in a 15-minute session"), encode it as a Tier 1
 simulation test over the pure `*Math` modules and `GameConfig`. Re-tuning config then
 can't silently break the intended pacing.
 
+**Keep the game modelable.** For games with an economy or difficulty curve, keep a
+closed-form balance model (`tests/sim/BalanceModel.lua`) next to a step-by-step
+simulation (`tests/sim/MatchSim.lua`). Both call the same pure modules as the game, and
+a spec checks they agree across several config variants. When a mechanic adds numbers,
+it also adds its parameters and terms to the model and to `docs/design/balance-model.md`.
+Then "what does +20 % damage do to wave 30?" takes seconds to answer, not a playtest.
+
 ## Observability (TestHooks)
 
 `shared/TestHooks.lua` (synced to `ReplicatedStorage.Shared.TestHooks`) gives every

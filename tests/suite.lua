@@ -7,12 +7,22 @@
 --
 -- Exits with code 1 if any assertion fails, so it can gate CI / pre-commit.
 --
--- This ships wired to Modules/ExampleMath as a starting template. Point it at your
--- real `*Math` modules and grow the assertions as you add gameplay logic.
+-- Game tests don't go in this file: put them in tests/specs/<Name>.spec.lua, which
+-- this suite discovers and runs automatically. Keeping game tests out of this file
+-- means framework updates to the harness never conflict with a game's tests.
+--
+-- A spec module returns a function that receives the harness:
+--
+--   return function(t)
+--       t.eq("adds", 1 + 1, 2)
+--       t.near("lerps", 0.5, 0.5)
+--       t.check("truthy", true)
+--   end
 --
 -- The ExampleMath block and the CI smoke check below are sample tests kept for
--- reference — safe to delete once real assertions replace them.
+-- reference; delete them once the game has real specs.
 
+local fs = require("@lune/fs")
 local process = require("@lune/process")
 
 local ExampleMath = require("../src/game/ReplicatedStorage/Modules/ExampleMath")
@@ -64,6 +74,24 @@ eq("stageForRatio clamps >1", ExampleMath.stageForRatio(2, 5), 5)
 -- check or delete once the suite has genuine assertions of its own.
 print("CI smoke check")
 eq("dummy: 1 + 1", 1 + 1, 2)
+
+-- ---- discovered specs (tests/specs/*.spec.lua) ---------------------------
+local harness = { check = check, eq = eq, near = near }
+local SPEC_DIR = "tests/specs"
+if fs.isDir(SPEC_DIR) then
+	local names = fs.readDir(SPEC_DIR)
+	table.sort(names)
+	for _, name in ipairs(names) do
+		local moduleName = string.match(name, "^(.+%.spec)%.luau?$")
+		if moduleName then
+			print(moduleName)
+			local ok, err = pcall(function()
+				require("./specs/" .. moduleName)(harness)
+			end)
+			check(moduleName .. " ran without error: " .. tostring(err), ok)
+		end
+	end
+end
 
 -- ---- summary -------------------------------------------------------------
 print(string.format("\n%d passed, %d failed", passed, failed))

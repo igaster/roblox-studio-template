@@ -22,8 +22,10 @@ lune run tests/suite.lua   # from the project root; exits non-zero on failure
 ```
 
 - **Run this yourself** after any change to pure logic — no Studio needed.
-- When adding logic, extract the pure part into a `*Math`/helper module and add
-  assertions to `tests/suite.lua`.
+- When adding logic, extract the pure part into a `*Math`/helper module and add a
+  `tests/specs/<Module>.spec.lua` (auto-discovered; see the header of
+  `tests/suite.lua` for the spec shape). Don't add game tests to `suite.lua` itself:
+  it's a framework file.
 - **Design targets as simulations**: when the GDD or a milestone spec states a
   measurable target (pacing, difficulty, time-to-X), write a Tier 1 test that simulates
   it over the pure modules and `GameConfig` (e.g. step a simulated session second by
@@ -45,7 +47,14 @@ is set up and connected, call `execute_luau` (Server context) with:
 require(game.ServerScriptService.SmokeTest).run()
 ```
 
-then `get_console_output` to retrieve the result — no need to involve the user.
+**Run it on the Server datamodel of a fresh Play session**, not in Edit mode. In
+Edit mode, `require()` from `execute_luau` keeps returning the copy of a module it
+loaded earlier in the Studio session, even after Rojo has synced new source, so Tier 2
+silently runs stale code. A new Play session always loads current source. The running
+game is harmless to the smoke test as long as smoke modules use their own scratch
+folders and filter TestHooks events by time.
+
+Then `get_console_output` to retrieve the result — no need to involve the user.
 Parse for per-step `PASS`/`FAIL` lines and the final `SMOKE TEST OK` /
 `SMOKE TEST FAILED` line, same contract as Tier 1's exit code.
 
@@ -60,8 +69,9 @@ not like a failure. Confirm sync (not just the MCP channel) before trusting a
 Tier 2 run — a real one silently didn't run at all despite every individual
 call succeeding.
 
-Request/run this after changes to classes or asset generators, and extend the
-script as new systems land.
+Request/run this after changes to classes or asset generators. Extend it by adding
+ModuleScripts under `ServerScriptService/SmokeTests/` (auto-discovered, each returns
+`function(check)`), never by editing `SmokeTest.lua` itself: it's a framework file.
 
 ## Tier 3 — Manual playtest checklist
 

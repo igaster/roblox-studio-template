@@ -22,13 +22,61 @@
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ServerStorage = game:GetService("ServerStorage")
 
 local TestHooks = {}
 
 local DEFAULT_TAG = "Interactable"
 local MAX_EVENTS = 500
 
+local BRIDGE_NAME = "TestHooksBridge"
+
 local events = {} -- { {time, category, message, data}, ... }, oldest first
+
+-- Code run through MCP's execute_luau gets its OWN copy of this module (a separate
+-- require cache from the game's scripts), so a plain module-level buffer would only
+-- ever show the caller's own events. The first server-side copy owns the buffer and
+-- publishes a BindableFunction; every other copy reads and writes through it, so all
+-- callers share one event log. Archivable = false keeps it out of saved place files.
+local bridge = nil -- set only in copies that DON'T own the buffer
+
+local function appendEvent(event)
+	table.insert(events, event)
+	if #events > MAX_EVENTS then
+		table.remove(events, 1)
+	end
+end
+
+local function filterEvents(sinceTime, category)
+	local result = {}
+	for _, e in ipairs(events) do
+		if (sinceTime == nil or e.time >= sinceTime) and (category == nil or e.category == category) then
+			table.insert(result, e)
+		end
+	end
+	return result
+end
+
+if RunService:IsServer() then
+	local existing = ServerStorage:FindFirstChild(BRIDGE_NAME)
+	if existing then
+		bridge = existing
+	else
+		local owned = Instance.new("BindableFunction")
+		owned.Name = BRIDGE_NAME
+		owned.Archivable = false
+		owned.OnInvoke = function(action, ...)
+			if action == "log" then
+				appendEvent(...)
+			elseif action == "get" then
+				return filterEvents(...)
+			end
+			return nil
+		end
+		owned.Parent = ServerStorage
+	end
+end
 
 -- Tag an instance as interactable (enterable/usable/collectible — anything a
 -- player can walk up to and do something with). One line, right where you
@@ -44,14 +92,16 @@ end
 -- Still prints too, so it's a strict addition, not a replacement for
 -- anything non-test code already relies on.
 function TestHooks.log(category, message, data)
-	table.insert(events, {
+	local event = {
 		time = os.clock(),
 		category = category,
 		message = message,
 		data = data,
-	})
-	if #events > MAX_EVENTS then
-		table.remove(events, 1)
+	}
+	if bridge then
+		bridge:Invoke("log", event)
+	else
+		appendEvent(event)
 	end
 	print(string.format("[TestHooks:%s] %s", category, message))
 end
@@ -60,13 +110,10 @@ end
 -- earlier TestHooks call or sample), optionally filtered to one category.
 -- Omit both args for the full buffer.
 function TestHooks.getEvents(sinceTime, category)
-	local result = {}
-	for _, e in ipairs(events) do
-		if (sinceTime == nil or e.time >= sinceTime) and (category == nil or e.category == category) then
-			table.insert(result, e)
-		end
+	if bridge then
+		return bridge:Invoke("get", sinceTime, category)
 	end
-	return result
+	return filterEvents(sinceTime, category)
 end
 
 local function tagPosition(inst)
