@@ -157,6 +157,26 @@ logging conventions yet, fall back to the manual techniques:
   which is itself worth flagging as a gap in `docs/framework-feedback.md`
   (the fix is adopting `TestHooks`/attributes, not a cleverer inference).
 
+## Recording sessions (SessionRecorder)
+
+`ReplicatedStorage.Shared.SessionRecorder` records play sessions for later analysis:
+player decisions and a few milestones (e.g. per-wave summaries), not logs. The game
+calls `start` / `record` / `finish`, and the newest 20 finished sessions stay in server
+memory until Play stops. **Play stopping loses them**, so export before that:
+
+- When the user is playing and you're monitoring, poll the game's phase/state attribute.
+  When the run ends (or the user says they're done), export immediately via
+  `execute_luau` on the **Server** datamodel:
+  ```lua
+  return require(game.ReplicatedStorage.Shared.SessionRecorder).exportJson(true) -- true = include the unfinished one
+  ```
+- Save the returned JSON to a file in the scratchpad, then hand it to the game's
+  session tooling (e.g. `lune run tests/sim/sessions.lua save <file>`), which keeps the
+  newest 20 under `playtests/sessions/`. Summarize with `... sessions.lua summary`.
+- Record only plain data (no Instances) so it survives JSON and the cross-copy bridge.
+- Like TestHooks, it's shared across require caches via `Shared.ServerBridge`.
+  Game code and MCP-run code see the same sessions.
+
 ## When not to use this
 
 - Pure logic changes (math, formulas, config) → Tier 1 (`roblox-test`), no Studio

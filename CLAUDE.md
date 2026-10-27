@@ -218,6 +218,12 @@ Call these from server-side code, and read results back via `execute_luau` on th
 **Server** datamodel. The full API and calling patterns are in the `roblox-playtest`
 skill.
 
+`shared/SessionRecorder.lua` complements TestHooks for **play sessions**: it records the
+player's decisions and per-round milestones (not logs) so a session can be analyzed
+after the fact. Export them over MCP before Play stops (see `roblox-playtest`).
+Both modules share state between the game and MCP-run code through
+`shared/ServerBridge.lua`. Use it for any module whose state an agent must inspect live.
+
 ## Agent-driven Studio tools
 
 When Studio is open with the Rojo plugin connected, the agent can drive it directly
