@@ -33,6 +33,7 @@ local MAX_EVENTS = 500
 local BRIDGE_NAME = "TestHooksBridge"
 
 local events = {} -- { {time, category, message, data}, ... }, oldest first
+local quietCategories = {} -- [category] = true: record but don't print
 
 -- Code run through MCP's execute_luau gets its OWN copy of this module (a separate
 -- require cache from the game's scripts), so a plain module-level buffer would only
@@ -103,7 +104,17 @@ function TestHooks.log(category, message, data)
 	else
 		appendEvent(event)
 	end
+	if quietCategories[category] then
+		return
+	end
 	print(string.format("[TestHooks:%s] %s", category, message))
+end
+
+-- Stop printing a high-volume category (e.g. one event per enemy kill) while still
+-- recording it for getEvents(). Applies to logs made through this module copy, i.e.
+-- call it from the game code that does the logging.
+function TestHooks.setQuiet(category, quiet)
+	quietCategories[category] = quiet ~= false or nil
 end
 
 -- Return recorded events at or after sinceTime (an os.clock() value from an

@@ -211,7 +211,8 @@ no per-game debug code. Two conventions make it work:
 2. `TestHooks.log(category, message, data)`: at meaningful state transitions
    (purchased, collected, phase changed, destroyed). Use it *instead of* a plain
    `print()`/`warn()` for anything a tester would care about. It still prints, and the
-   event can be filtered and read back afterward.
+   event can be filtered and read back afterward. For high-volume events (one per kill),
+   call `TestHooks.setQuiet(category)` once so they're recorded without flooding Output.
 
 Call these from server-side code, and read results back via `execute_luau` on the
 **Server** datamodel. The full API and calling patterns are in the `roblox-playtest`

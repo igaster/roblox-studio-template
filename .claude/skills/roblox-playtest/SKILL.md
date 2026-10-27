@@ -114,7 +114,8 @@ TestHooks API (`src/shared/TestHooks.lua`):
 | Function | Purpose |
 |---|---|
 | `TestHooks.tagInteractable(instance, tag?)` | Tag an entity as interactable (default tag `"Interactable"`). |
-| `TestHooks.log(category, message, data?)` | Record a structured, filterable event (also prints). |
+| `TestHooks.log(category, message, data?)` | Record a structured, filterable event (also prints, unless the category is quiet). |
+| `TestHooks.setQuiet(category, quiet?)` | Keep recording a high-volume category (e.g. per-kill events) without printing it. |
 | `TestHooks.getEvents(sinceTime?, category?)` | Read back recorded events, filtered by time and/or category. |
 | `TestHooks.dumpState(tags?)` | Snapshot: every `Player`'s attributes, plus every tagged instance's position + attributes. |
 | `TestHooks.teleportNear(player, tag?)` | Move a player's character next to the nearest tagged instance. |
