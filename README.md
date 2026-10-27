@@ -4,8 +4,8 @@ A minimal project template for Roblox games using [Rojo](https://rojo.space/) fo
 
 ## What's Included
 
-- Rojo 7.6.1 and Lune, pinned via Rokit
-- `src/shared/` for modules synced into both places
+- Rojo and Lune, pinned via Rokit (`rokit.toml`)
+- `src/shared/` for modules synced into `ReplicatedStorage.Shared`
 - `ServerStorage/AssetGenerators/` pattern for programmatic asset creation
 - `GameConfig.lua` as a single source of truth for all game settings
 - A three-tier testing setup (headless Lune unit tests, in-engine smoke test, manual
@@ -44,6 +44,8 @@ make serve
 |---|---|
 | `make serve` | Start Rojo server |
 | `make test` | Run headless Lune unit tests |
+| `/kickoff <idea>` | (Claude Code) questions → GDD → first milestone proposal |
+| `/milestone <n>` | (Claude Code) spec → plan → build → verify → retro |
 
 ## Project Structure
 

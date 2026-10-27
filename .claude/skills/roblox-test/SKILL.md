@@ -24,6 +24,11 @@ lune run tests/suite.lua   # from the project root; exits non-zero on failure
 - **Run this yourself** after any change to pure logic — no Studio needed.
 - When adding logic, extract the pure part into a `*Math`/helper module and add
   assertions to `tests/suite.lua`.
+- **Design targets as simulations**: when the GDD or a milestone spec states a
+  measurable target (pacing, difficulty, time-to-X), write a Tier 1 test that simulates
+  it over the pure modules and `GameConfig` (e.g. step a simulated session second by
+  second and assert the target is hit). Name the assertion after the target ID (`DT2`,
+  `M1-AC3`) so failures point back to the spec.
 - `Modules/ExampleMath.lua` + its assertions in `tests/suite.lua` are a starting
   template — replace them with the game's real modules as they're built.
 

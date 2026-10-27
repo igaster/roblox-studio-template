@@ -109,6 +109,16 @@ Key pitfalls this template avoids, each hit at least once in practice:
 
 ## Generic scenario setup — use TestHooks first
 
+TestHooks API (`src/shared/TestHooks.lua`):
+
+| Function | Purpose |
+|---|---|
+| `TestHooks.tagInteractable(instance, tag?)` | Tag an entity as interactable (default tag `"Interactable"`). |
+| `TestHooks.log(category, message, data?)` | Record a structured, filterable event (also prints). |
+| `TestHooks.getEvents(sinceTime?, category?)` | Read back recorded events, filtered by time and/or category. |
+| `TestHooks.dumpState(tags?)` | Snapshot: every `Player`'s attributes, plus every tagged instance's position + attributes. |
+| `TestHooks.teleportNear(player, tag?)` | Move a player's character next to the nearest tagged instance. |
+
 Reaching the state worth testing is usually the actual bottleneck, not the
 testing itself. `ReplicatedStorage.Shared.TestHooks` ships with every game
 (see `CLAUDE.md`'s "Observability (TestHooks)") for exactly this — **check
@@ -143,7 +153,7 @@ logging conventions yet, fall back to the manual techniques:
   without the module. Avoid inferring state from visual proxies (e.g. "is the
   vehicle alive" from whether a `Head` part exists) if you can avoid it — that
   usually means the real state lives in a private Lua table you can't reach,
-  which is itself worth flagging as a gap in `REPORT.md`/`FEEDBACK_LOG.md`
+  which is itself worth flagging as a gap in `docs/framework-feedback.md`
   (the fix is adopting `TestHooks`/attributes, not a cleverer inference).
 
 ## When not to use this

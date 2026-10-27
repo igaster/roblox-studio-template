@@ -2,7 +2,7 @@ Set up this Roblox game project from scratch. Follow these steps in order, repor
 
 ## Step 1 — Check toolchain (Rojo, Lune)
 
-Run `rojo --version` and `lune --version` in PowerShell.
+Run `rojo --version` and `lune --version`.
 
 - If both are already installed (any version): note the versions, skip to Step 3.
 - If either is missing: proceed to Step 2.
@@ -36,11 +36,9 @@ Wait for their answer, then update `default.project.json` — replace the value 
 
 ## Step 6 — Start the Rojo server
 
-Run the server in a new window so the terminal stays free:
-
-```powershell
-Start-Process -FilePath "rojo" -ArgumentList "serve", "default.project.json" -WindowStyle Normal
-```
+Run `make serve` as a background command so the terminal stays free. On Windows
+without `make`, use
+`Start-Process -FilePath "rojo" -ArgumentList "serve", "default.project.json"`.
 
 The server listens on `localhost:34872`.
 

@@ -5,11 +5,12 @@ engineering conventions in `CLAUDE.md` and the testing checklist in
 `docs/TESTING.md`. Nothing here affects how Claude edits code; it's a place to
 record what the game *is*, not how it's built.
 
-Suggested contents as the project grows:
+Contents:
 
-- `GDD.md` — the game design document: concept, core loop, systems overview.
-- `features/` — one file per feature spec (mechanics, UI flows, economy).
-- `milestones/` — per-milestone scope and acceptance notes.
-- Lore, art direction, or other reference material.
+- `GDD.md`: the game design document (created by `/kickoff` from `templates/gdd.md`).
+- `milestones/M<n>-<slug>.md`: one spec per milestone (created by `/milestone` from
+  `templates/milestone.md`), with acceptance criteria, plan, tasks, results, and retro.
+- `templates/`: framework-owned templates. Improve them via `framework:` commits.
+- Anything else the game needs: feature specs, lore, art direction.
 
-There's no required structure — add files and subfolders as the game needs them.
+Settled decisions go in `../decisions/`, not here.

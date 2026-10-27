@@ -25,8 +25,7 @@ the first conversation in the project — don't wait to be asked a second time.
    - Open Roblox Studio, open the project's place.
    - Run `make serve`, then connect the Rojo plugin toolbar to `localhost:34872`.
    - Assistant → "… ⟩ Manage MCP Servers" → toggle "Enable Studio as MCP server".
-4. **Rename placeholders:** update the project name in `default.project.json` and
-   `lobby.project.json`.
+4. **Rename placeholders:** update the project name in `default.project.json`.
 5. **Verify:** confirm Rojo shows connected in Studio. Optionally verify MCP via
    `roblox-studio-mcp`'s trivial `execute_luau` call.
 
