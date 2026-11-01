@@ -43,3 +43,6 @@ Never start a milestone the user hasn't explicitly confirmed.
 - Propose `framework:` fixes for the logged friction as separate commits.
 - Mark the milestone `Done`, update the GDD roadmap, and propose the next milestone.
   **Stop** and wait for confirmation before starting it.
+
+Keep `docs/STATUS.md` current throughout: at every checkpoint, and whenever the current
+task or an open question changes.

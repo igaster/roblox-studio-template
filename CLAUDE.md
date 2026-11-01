@@ -102,7 +102,7 @@ The framework is improved by building real games with it.
   they can be cherry-picked back to the template unchanged. Keep them game-agnostic:
   no game names or game-specific examples in framework files.
 - **Game commits** touch `src/` (except `src/shared/TestHooks.lua`), `docs/design/`
-  (except `templates/`), and `docs/decisions/`.
+  (except `templates/`), `docs/decisions/`, and `docs/STATUS.md`.
 - **Friction log**: whenever the framework gets in the way (a skill was wrong, a
   convention was missing, a step needed a manual workaround), append a dated entry to
   `docs/framework-feedback.md`. Do this when it happens, not from memory later. Review
@@ -171,6 +171,20 @@ The framework is improved by building real games with it.
 
 ## Documentation
 
+**The docs are the handoff between chats.** Any new chat must be able to continue from
+the repo alone, with no access to earlier chats.
+
+- At the start of work, read `docs/STATUS.md`. If it's missing, create it from
+  `docs/design/templates/status.md`.
+- Before ending any turn that changed something, update the affected docs: what was
+  decided, built, or found, and what is waiting on the user (including questions they
+  haven't answered). Don't leave this for the milestone retro.
+- When a doc turns out to be wrong or stale, fix it when you notice. Finished milestone
+  specs are the exception: they're a historical record, so note renames in `STATUS.md`.
+
+Where things go:
+
+- `docs/STATUS.md`: current state, next step, open questions, known problems.
 - `docs/design/`: game design: `GDD.md`, `milestones/`, lore, art direction. Templates
   for these live in `docs/design/templates/` (framework-owned).
 - `docs/decisions/`: short decision records (one file per decision).

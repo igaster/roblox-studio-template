@@ -23,5 +23,6 @@ followed by a stop for the user's approval.
 5. **Propose M1**: the smallest playable version that exercises the core loop
    end-to-end. Write it as `docs/design/milestones/M1-<slug>.md` from the template, with
    status `Proposed` and acceptance criteria filled in. Leave Plan/Tasks empty.
-6. **Stop.** Summarize the GDD and M1 in a few lines, list the defaults you chose, and
+6. **Create `docs/STATUS.md`** from `docs/design/templates/status.md`.
+7. **Stop.** Summarize the GDD and M1 in a few lines, list the defaults you chose, and
    ask the user to approve or change them. Do not start building.
