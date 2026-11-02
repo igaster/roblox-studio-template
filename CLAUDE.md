@@ -207,12 +207,10 @@ within 60 s", "reach business #3 in a 15-minute session"), encode it as a Tier 1
 simulation test over the pure `*Math` modules and `GameConfig`. Re-tuning config then
 can't silently break the intended pacing.
 
-**Keep the game modelable.** For games with an economy or difficulty curve, keep a
-closed-form balance model (`tests/sim/BalanceModel.lua`) next to a step-by-step
-simulation (`tests/sim/MatchSim.lua`). Both call the same pure modules as the game, and
-a spec checks they agree across several config variants. When a mechanic adds numbers,
-it also adds its parameters and terms to the model and to `docs/design/balance-model.md`.
-Then "what does +20 % damage do to wave 30?" takes seconds to answer, not a playtest.
+**Balance modeling is optional.** When a game's numbers are worth reasoning about, the
+`game-modeling` skill covers how to build a simulation or balance model and how to validate
+it. Then "what does +20 % damage do later on?" takes seconds to answer, not a playtest. It
+must never limit the game: a mechanic that doesn't fit the model is listed as not modeled.
 
 ## Observability (TestHooks)
 

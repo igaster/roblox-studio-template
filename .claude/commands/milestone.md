@@ -26,6 +26,8 @@ Never start a milestone the user hasn't explicitly confirmed.
 - Follow `CLAUDE.md` conventions: config in `GameConfig`, pure math in `Modules/`,
   server authority, validated remotes, `TestHooks` tags and logs.
 - Run Tier 1 (`make test`) after every logic change.
+- If the project keeps a balance model, update it for new numbers (`game-modeling` skill).
+  A mechanic it can't express is listed as not modeled, and doesn't block the task.
 - Log framework friction to `docs/framework-feedback.md` when it happens.
 
 ## 4. Verify
