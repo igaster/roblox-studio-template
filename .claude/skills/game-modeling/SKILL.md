@@ -95,6 +95,34 @@ Agreement in one number proves little. Run what the model's use justifies, in th
 Then write in the balance doc what it's **valid for** and **not valid for**, with the date.
 A check that hasn't been run is reported as not run, never as passing.
 
+## Re-evaluating after changes: the balance toolkit
+Mechanics change, and balance decisions made today stop holding. Keep the evidence
+re-runnable with the framework's toolkit in `tests/lib/balance/` (Lune, game-agnostic):
+
+| Module | What it does |
+|---|---|
+| `Scenario` | Builds a matrix from axes in data (level × difficulty × players × persona) and runs it |
+| `Metrics` | Outcome metrics: cliff length (first trouble → loss), pick rates, ablation loss, best option per probe |
+| `Probe` | Probes from unit properties in config (armored, fast, clustered, …): a new property adds probes without code |
+| `Baseline` | Flat metric snapshot in the repo, and a diff against it |
+| `Claims` | Every design target and balance decision as a checkable claim with its source; known gaps are reported, not failed |
+
+The game writes only an **adapter**: how to run a scenario in its simulation, which unit
+properties define probes, and its claims. Guidelines:
+- **Define metrics on outcomes, not mechanics** (loss round, first trouble, cliff, pick
+  rate, ablation), so they survive new mechanics.
+- **Let personas act through a generic option list** built from config, so new content is
+  measured without code changes.
+- **Measure situational value with probes plus ablation**: in rounds made of one unit
+  property, how much is lost without each option. Ablation, not damage per cost, so
+  support options (slows, buffs) get credit for what they enable.
+- **Write each balance decision as a claim** that cites where it's recorded. After a change,
+  failing claims list the decisions to revisit; the baseline diff shows everything else that
+  moved.
+- **Check the toolkit itself**: a replay of a run's own decisions must reproduce it exactly,
+  and a plain persona should reproduce a live scripted player's runs when given the same
+  decision rule.
+
 ## Lessons from real projects
 
 | What happened | Do this |
@@ -109,4 +137,7 @@ A check that hasn't been run is reported as not run, never as passing.
 | A session tool compared an old recording with today's model without warning. | Check that a recording's config matches before comparing. |
 | The simulation matched the real code exactly, yet a live run with a plain scripted player lost far earlier on one level. The simulated player was an optimizer, and on a cramped level its choices were worth many rounds. | Validate with a plain player too, and say which player a measurement used. |
 | A model fix for a new mechanic also changed the simulated player's purchases, because they were scored with the model, and it broke unrelated agreement specs. | Keep the decision rule's scoring independent of the model under test. |
+| A plain persona lost 11 rounds earlier than the live scripted player it was meant to copy. Its build order differed: it cycled through every option, the live script favoured the generalist. With the same order the simulation matched live runs within one round on every level. | Share the exact decision rule (or its data) between a simulated persona and the live script, and check they agree. |
+| All smoke tests passed while ablation showed two of four options were worth nothing to the optimizer. | Run ablation and probes before tuning numbers; they find dead options that outcome targets miss. |
+| A recorded session's metadata was written before the players chose the level, so a replay used the wrong level. | Record setting changes as events in the session, and read the last one when replaying. |
 | The model saturated: once a unit's coverage exceeded one spawn gap it was assumed busy all round, so range, unit speed, and level shape stopped mattering, and it predicted the same result for every level. | Run the sensitivity sweep on geometry and speed parameters, and list saturating terms under "Not modeled". |
