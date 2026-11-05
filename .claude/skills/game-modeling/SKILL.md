@@ -36,6 +36,14 @@ Stop at the lowest level that answers them. Many games stop at level 2 or 3.
 | 3 | Step-by-step simulation with a scripted player | "How does a whole session go?" | medium |
 | 4 | Closed-form model next to the simulation | "Which parameter matters?", instantly | high, and it needs upkeep |
 
+**Simulation and model are different tools.** The simulation plays the session tick by tick
+with the game's own rules, so it can match the real code exactly, but it doesn't explain
+why. The model estimates each round from averages with formulas, so it's instant and shows
+which term decides the outcome, but it can't see timing (where each unit is when). When they
+disagree, the simulation wins. A model is worth its upkeep only while it stays responsive to
+the parameters you tune. Check that with the sensitivity sweep below, and stop maintaining it
+when it isn't.
+
 ## Building it
 1. **Write down the questions** the model must answer, in the balance doc (template:
    `docs/design/templates/balance-model.md`).
@@ -48,8 +56,16 @@ Stop at the lowest level that answers them. Many games stop at level 2 or 3.
    a changed copy (difficulty, unlocks, permanent bonuses). The game, simulation, and model
    then share one definition with no special cases.
 5. **Share the scripted player's decision rule** between simulation and model, so they play
-   by the same choices.
-6. **Name fitted constants as calibration**, and recheck them when the config changes. A
+   by the same choices, **but don't score options with the model being validated.** If the
+   rule ranks purchases by the model's own formulas, any change to a formula also changes
+   what the simulated player buys, and a model fix can't be checked against an unchanged
+   simulation. Score with a separate, fixed function, or pin the simulation's decisions
+   (record them once and replay) while you change the model.
+6. **Keep more than one scripted player.** An optimizing player (best value per unit spent)
+   shows what the numbers allow. A plain one (a fixed build order, simple placement) is
+   closer to a typical human. Design targets for typical players belong on the plain one,
+   or on both with separate bands.
+7. **Name fitted constants as calibration**, and recheck them when the config changes. A
    constant fitted to today's numbers can make a wrong structure look right.
 
 Keep these under `tests/sim/`, with a small command-line tool for each question.
@@ -64,10 +80,16 @@ Agreement in one number proves little. Run what the model's use justifies, in th
    the changes where the model doesn't respond, where they move in opposite directions, and
    where the gap exceeds the tolerance.
 3. **Replay on the real code**: record the simulated player's decisions and replay them on
-   the real classes in the engine, then compare round by round.
-4. **Step size**: run at each step size the live game can use, such as each game speed.
+   the real classes in the engine, then compare round by round. This checks the engine, not
+   the player.
+4. **A scripted player in the live game**: a script in a real client (Play session) that
+   plays a whole session through the same remotes as the UI, with its own decision rule.
+   It needs no human and shows what the live game does with a player that isn't the
+   simulation's. When it disagrees with the simulation, replay its recorded decisions in
+   the simulation: if the simulation then agrees, the gap is the player, not the engine.
+5. **Step size**: run at each step size the live game can use, such as each game speed.
    The result shouldn't depend on it.
-5. **Real players**: compare with recorded sessions. Stamp recordings with the config they
+6. **Real players**: compare with recorded sessions. Stamp recordings with the config they
    were made under, and don't compare across configs without saying so.
 
 Then write in the balance doc what it's **valid for** and **not valid for**, with the date.
@@ -85,3 +107,6 @@ A check that hasn't been run is reported as not run, never as passing.
 | A failing design target sat behind a fully passing test suite. | Show known gaps in the test summary, so that passing doesn't read as on target. |
 | Rapid failed purchases in a recording looked like a UI bug. The player was just impatient. | Recordings show what happened, not why. Ask the player before acting on them. |
 | A session tool compared an old recording with today's model without warning. | Check that a recording's config matches before comparing. |
+| The simulation matched the real code exactly, yet a live run with a plain scripted player lost far earlier on one level. The simulated player was an optimizer, and on a cramped level its choices were worth many rounds. | Validate with a plain player too, and say which player a measurement used. |
+| A model fix for a new mechanic also changed the simulated player's purchases, because they were scored with the model, and it broke unrelated agreement specs. | Keep the decision rule's scoring independent of the model under test. |
+| The model saturated: once a unit's coverage exceeded one spawn gap it was assumed busy all round, so range, unit speed, and level shape stopped mattering, and it predicted the same result for every level. | Run the sensitivity sweep on geometry and speed parameters, and list saturating terms under "Not modeled". |

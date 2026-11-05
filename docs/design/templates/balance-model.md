@@ -10,7 +10,7 @@
 |---|---|---|
 | Parameters | `GameConfig` | Every gameplay number |
 | Formulas | `Modules/*Math.lua` | Pure functions the live game uses |
-| Simulation | `tests/sim/…` | Step-by-step session with a scripted player |
+| Simulation | `tests/sim/…` | Step-by-step session with a scripted player (say which: optimizing or plain) |
 | Model | `tests/sim/…` | Closed-form prediction |
 
 Tools:
@@ -30,6 +30,7 @@ Tools:
 | Measures compared, and tolerance | |
 | Sensitivity: changes, not responding, opposite direction | |
 | Replay on the real code | not run |
+| Scripted player in the live game | not run |
 | Step sizes the live game uses | not run |
 | Real players | not run |
 
