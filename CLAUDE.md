@@ -17,7 +17,9 @@ This repo is two things at once: **the game** and **the framework** it was clone
 
 ## Key Commands
 - `make serve` - Start Rojo server
-- `make test` - Run headless Lune unit tests
+- `make test` - Run headless Lune unit tests (fast; skips `*.slow.spec.lua`)
+- `make test-all` - Run every Lune spec, including slow simulation specs
+- `make balance` - Run the game's balance report, if it has one (`game-modeling` skill)
 - `rojo plugin install` - Install/update the Rojo plugin in Roblox Studio
 - `/kickoff` - Start a new game: questions → GDD → first milestone proposal
 - `/milestone` - Spec, plan, build, and verify one milestone

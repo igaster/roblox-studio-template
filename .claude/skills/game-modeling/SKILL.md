@@ -107,6 +107,11 @@ re-runnable with the framework's toolkit in `tests/lib/balance/` (Lune, game-agn
 | `Baseline` | Flat metric snapshot in the repo, and a diff against it |
 | `Claims` | Every design target and balance decision as a checkable claim with its source; known gaps are reported, not failed |
 
+`Parallel.lune(worker, jobs, limit, cost)` runs each job in its own Lune process (one per
+core, most expensive first), so a matrix of simulations takes about as long as its slowest
+runs. Name long simulation specs `*.slow.spec.lua`: `make test` skips them, `make test-all`
+runs them, and `make balance` runs the game's report (`tests/sim/eval.lua --check`).
+
 The game writes only an **adapter**: how to run a scenario in its simulation, which unit
 properties define probes, and its claims. Guidelines:
 - **Define metrics on outcomes, not mechanics** (loss round, first trouble, cliff, pick

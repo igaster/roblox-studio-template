@@ -76,21 +76,33 @@ print("CI smoke check")
 eq("dummy: 1 + 1", 1 + 1, 2)
 
 -- ---- discovered specs (tests/specs/*.spec.lua) ---------------------------
+-- Specs named *.slow.spec.lua (long simulations) run only with --slow, so the everyday
+-- `make test` stays fast. Each spec's time is printed when it takes over a second.
 local harness = { check = check, eq = eq, near = near }
 local SPEC_DIR = "tests/specs"
+local runSlow = table.find(process.args, "--slow") ~= nil
+local skippedSlow = 0
 if fs.isDir(SPEC_DIR) then
 	local names = fs.readDir(SPEC_DIR)
 	table.sort(names)
 	for _, name in ipairs(names) do
 		local moduleName = string.match(name, "^(.+%.spec)%.luau?$")
-		if moduleName then
-			print(moduleName)
+		local slow = moduleName ~= nil and string.find(moduleName, "%.slow%.spec$") ~= nil
+		if moduleName and slow and not runSlow then
+			skippedSlow += 1
+		elseif moduleName then
+			local started = os.clock()
 			local ok, err = pcall(function()
 				require("./specs/" .. moduleName)(harness)
 			end)
+			local seconds = os.clock() - started
+			print(if seconds > 1 then string.format("%s (%.1f s)", moduleName, seconds) else moduleName)
 			check(moduleName .. " ran without error: " .. tostring(err), ok)
 		end
 	end
+end
+if skippedSlow > 0 then
+	print(string.format("(%d slow spec file(s) skipped; run with --slow or `make test-all`)", skippedSlow))
 end
 
 -- ---- summary -------------------------------------------------------------
