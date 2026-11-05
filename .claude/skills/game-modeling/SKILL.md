@@ -113,9 +113,14 @@ properties define probes, and its claims. Guidelines:
   rate, ablation), so they survive new mechanics.
 - **Let personas act through a generic option list** built from config, so new content is
   measured without code changes.
-- **Measure situational value with probes plus ablation**: in rounds made of one unit
-  property, how much is lost without each option. Ablation, not damage per cost, so
-  support options (slows, buffs) get credit for what they enable.
+- **Measure situational value with probes plus ablation**: in rounds that stress one unit
+  property (the normal mix with that property weighted up), how much is lost without each
+  option. Ablation, not damage per cost, so support options (slows, buffs) get credit for
+  what they enable. Rounds made of only one property can be degenerate (a pure crowd round
+  multiplies the unit count) and end every run at once.
+- **Negative ablation means the persona misplays**: if removing an option makes the
+  optimizer last longer, its evaluation overrates that option, and role measurements show
+  the persona's mistakes, not the option's value. Fix the persona before tuning.
 - **Write each balance decision as a claim** that cites where it's recorded. After a change,
   failing claims list the decisions to revisit; the baseline diff shows everything else that
   moved.
