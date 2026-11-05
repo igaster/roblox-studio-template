@@ -84,6 +84,16 @@ missing or disconnected rather than falling back silently — the manual fallbac
 paths documented in `roblox-test` still work, but should be a deliberate choice,
 not a silent one.
 
+## When `execute_luau` is sandboxed
+After a Studio restart, MCP code can run without the "Network" capability: `require` of a
+game module, invoking a BindableFunction, or parenting a Script into ServerScriptService
+fails with "...has an additional value for the Capabilities property: Network". Reading and
+writing attributes still works. Then drive the game through **dev commands**
+(`TestHooks.devCommand(name, handler)`, Studio only): the game registers a handler, the
+agent sets attribute `Dev_<name>` on ServerStorage (server) or the LocalPlayer (client) and
+polls `Dev_<name>_Done` / `Dev_<name>_Result`. The handler runs with the game's own
+permissions. A game can register e.g. "SmokeTest" so Tier 2 still runs.
+
 ## Tools and when to use them
 
 - **`execute_luau`** — run a Luau snippet in Edit, Server, or Client context. Prefer

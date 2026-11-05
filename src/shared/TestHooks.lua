@@ -177,4 +177,35 @@ function TestHooks.teleportNear(player, tag)
 	return true, nearest
 end
 
+-- Dev commands (Studio only): let an agent ask the running game to do something with
+-- the game's own permissions. An agent's `execute_luau` thread can be sandboxed (no
+-- `require` of game modules), but it can still set and read attributes. So:
+--   game:  TestHooks.devCommand("SmokeTest", function(request) ... return resultString end)
+--   agent: set attribute "Dev_SmokeTest" (any string) on the command target, then poll
+--          "Dev_SmokeTest_Done" and read "Dev_SmokeTest_Result".
+-- The target is ServerStorage on the server and the LocalPlayer on a client. Each new
+-- request runs the handler once (in its own thread); errors come back as "error: ...".
+-- Does nothing outside Studio, so it can't be triggered on a live server.
+function TestHooks.devCommand(name, handler)
+	local RunService = game:GetService("RunService")
+	if not RunService:IsStudio() then
+		return
+	end
+	local target = if RunService:IsServer() then game:GetService("ServerStorage") else Players.LocalPlayer
+	local key = "Dev_" .. name
+	target:GetAttributeChangedSignal(key):Connect(function()
+		local request = target:GetAttribute(key)
+		if request == nil then
+			return
+		end
+		target:SetAttribute(key .. "_Done", false)
+		task.spawn(function()
+			local ok, result = pcall(handler, request)
+			target:SetAttribute(key .. "_Result", if ok then tostring(result) else "error: " .. tostring(result))
+			target:SetAttribute(key, nil)
+			target:SetAttribute(key .. "_Done", true)
+		end)
+	end)
+end
+
 return TestHooks
