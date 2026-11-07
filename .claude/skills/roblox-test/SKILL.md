@@ -69,6 +69,10 @@ not like a failure. Confirm sync (not just the MCP channel) before trusting a
 Tier 2 run — a real one silently didn't run at all despite every individual
 call succeeding.
 
+**HUD layout** isn't covered by the server smoke test: a server can't measure GUI.
+For a game with a generated HUD, run the client-side `LayoutCheck` dev command after GUI
+changes (see `roblox-asset-generators`, "HUD layout").
+
 Request/run this after changes to classes or asset generators. Extend it by adding
 ModuleScripts under `ServerScriptService/SmokeTests/` (auto-discovered, each returns
 `function(check)`), never by editing `SmokeTest.lua` itself: it's a framework file.

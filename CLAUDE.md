@@ -209,6 +209,10 @@ within 60 s", "reach business #3 in a 15-minute session"), encode it as a Tier 1
 simulation test over the pure `*Math` modules and `GameConfig`. Re-tuning config then
 can't silently break the intended pacing.
 
+**HUD layout is tested too.** A generated HUD follows the layout conventions in
+`roblox-asset-generators` (one `Root` with a `UIScale`, `LayoutSample` texts) and is checked
+by `shared/LayoutCheck.lua` at several window sizes, UI scales, and phases.
+
 **Balance modeling is optional.** When a game's numbers are worth reasoning about, the
 `game-modeling` skill covers how to build a simulation or balance model and how to validate
 it. Then "what does +20 % damage do later on?" takes seconds to answer, not a playtest. It
