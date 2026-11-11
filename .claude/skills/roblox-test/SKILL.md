@@ -85,21 +85,12 @@ HUD, run the client-side `LayoutCheck` dev command after GUI changes (see
   or timer module's time there is not the live game's (it may never advance). Measure
   durations with `os.clock()` at a forced 1× speed, or read times from attributes.
 
-## Balance simulator (optional)
+## Balance simulations (optional)
 
-When tuning needs many matches, a headless Lune script (`tests/balance_sim.lua`, run with
-`make sim`) plays the game's rules quickly. Keep it honest:
-- **It calls the game's real rule modules** (`*Math`, `GameConfig`): no copied formulas. List
-  the rules it models in its header. **A rule change is a sim change:** when placement,
-  waves, economy or win rules change, update the sim in the same task, or its results tune
-  the old game.
-- **Step size must not matter.** Countdowns carry the leftover (`cooldown += interval`, not
-  `= 0`), and a Tier 1 check runs the same match at two step sizes and expects the same result.
-  Otherwise the sim and the live game drift with the frame rate.
-- **Results sit on cliffs.** Small changes can flip a win to a loss. Report margins (health
-  left, waves survived), not only win or loss. Save the results table, and diff a new run
-  against it (`make sim ARGS=--check`), so a refactor meant to keep the balance reproduces it
-  exactly and a real change shows up as a diff.
+A headless simulation of the game's rules (`tests/sim/`, report run by `make balance`) is
+covered by the `roblox-game-modeling` skill: when it fits, how to keep it honest (real rule
+modules, step size, margins, a saved baseline) and how far to trust it. Long simulation
+specs are named `*.slow.spec.lua`, so `make test` stays fast.
 
 ## Tier 3 — Manual playtest checklist
 

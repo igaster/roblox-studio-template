@@ -120,6 +120,7 @@ it, including mid-build, when a plan task names it:
 | Verifying gameplay in a Play session | `roblox-playtest` |
 | Looking at an asset or scene | `roblox-capture` |
 | A new game, a large feature, tuning, monetization | `roblox-game-design` |
+| A simulation or balance model of the game's numbers (optional) | `roblox-game-modeling` |
 
 ## Development Workflow
 

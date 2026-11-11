@@ -38,6 +38,7 @@ one-line idea to a milestone at a time.
 |---|---|
 | `roblox-initialize` | First-time setup of a fresh clone |
 | `roblox-game-design` | A new game idea, a feature, tuning, monetization |
+| `roblox-game-modeling` | Optional: a simulation or balance model of the game's numbers |
 | `roblox-game-teardown` | Studying an existing game named as inspiration |
 | `roblox-lead` | Designing and building whole milestones with little involvement from you |
 | `roblox-asset-generators` | Models, tools, parts, levels and GUIs built by code |
@@ -85,7 +86,7 @@ from there.
 | `make test` | Run the headless Lune tests (skips slow specs) |
 | `make test-all` | Run every Lune test, including slow simulation specs |
 | `make verify` | Check the toolchain, Rojo server and Studio connection (macOS) |
-| `make sim` | Run the game's balance simulator, if it has one (`tests/balance_sim.lua`) |
+| `make balance` | Run the game's balance report against its baseline, if it has one (`tests/sim/eval.lua`) |
 
 ## Project structure
 

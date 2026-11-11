@@ -25,7 +25,7 @@ FRAMEWORK_PATHS=(CLAUDE.md README.md .claude .claude-plugin .github plugins scri
 	docs/design/README.md docs/design/references/.gitkeep docs/design/milestones/.gitkeep
 	docs/design/features/.gitkeep docs/superpowers docs/TODO.md Makefile .mcp.json
 	default.project.json rokit.toml .gitignore bootstrap.sh bootstrap.bat
-	tests/harness.lua tests/framework.lua tests/run.lua
+	tests/harness.lua tests/framework.lua tests/run.lua tests/lib
 	.ledger)
 
 # Template-shipped, game-owned (see above). tests/game.lua and tests/suite.lua are older homes

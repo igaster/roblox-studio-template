@@ -135,6 +135,9 @@ Treat a tuning request as a symptom. Before changing a number:
 2. **Where in the economy?** Name the source and the sink it affects (`references/economy.md`).
 3. **What does it cost?** Faster progression uses content up faster. More income inflates prices.
 4. **One knob, in `GameConfig`**, plus a way to know it worked (a `TestHooks.log` event, a playtest check).
+5. **If the question is about consequences** ("what does +20 % damage do later on", "can
+   players afford the second upgrade in time"), or the game keeps a balance model, use
+   `roblox-game-modeling`: a simulation answers in seconds what a playtest answers in an hour.
 
 Monetization requests also go through `references/economy.md` → *Monetization*: no
 pay-to-win against other players, and look up current policy via context7 (`/roblox/creator-docs`).

@@ -117,4 +117,8 @@ do
 	H.near("the tighter axis wins", LayoutMath.uiScale(1, 2000, 270, 960, 540), 0.5)
 end
 
+-- ---- Balance toolkit (tests/lib/balance, roblox-game-modeling skill) -----------
+H.section("Balance toolkit")
+require("./lib/balance/BalanceLib.spec")(H)
+
 return nil
