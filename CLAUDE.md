@@ -20,13 +20,14 @@ Roblox game developed with Rojo for local development and live-syncing to Roblox
 ```
 src/
 ├── game/                        # Game place
-│   ├── ReplicatedStorage/
+│   ├── ReplicatedStorage/       # Downloaded by every client: no server-only logic here
 │   │   ├── GameConfig.lua       # All game configuration
-│   │   ├── Classes/             # OOP entities (one file per class)
-│   │   └── Modules/             # Utilities
+│   │   ├── Classes/             # Shared OOP classes (used by client and server)
+│   │   └── Modules/             # Pure utilities and *Math formulas (Lune-testable)
 │   ├── ServerScriptService/
 │   │   ├── Main.server.lua      # The only server Script: starts Services/
 │   │   ├── Services/            # Server game logic, one ModuleScript per system
+│   │   ├── Classes/             # Server-only OOP classes (economy, saving, spawning)
 │   │   └── SmokeTest.lua        # Tier 2 test (ModuleScript, never auto-runs)
 │   ├── StarterPlayerScripts/
 │   │   ├── Main.client.lua      # The only LocalScript: starts Controllers/
@@ -43,6 +44,10 @@ src/
                                  # → ReplicatedStorage.Shared.
                                  # Game modules go in ReplicatedStorage/Modules/.
 ```
+
+Anything in `ReplicatedStorage` is readable by exploiters. A class goes in
+`ReplicatedStorage/Classes/` only if the client needs it; otherwise in
+`ServerScriptService/Classes/`.
 
 ### Code Organization
 
@@ -68,12 +73,29 @@ src/
 - **The server validates every argument**: `typeof` checks, ranges, ownership,
   cooldowns. It never trusts a client-sent value for state the server owns. A rejected
   request returns or warns, never errors.
+- **Clients send intent only** ("buy item X"), never amounts, prices or results: the server
+  looks them up in `GameConfig`. Rate-limit what a player can spam (a per-player cooldown,
+  its value in `GameConfig`).
+- Prefer `RemoteEvent`s. Never call `InvokeClient`: a client can make it hang forever.
 - **Client-simulated characters.** The client moves its own character, so the server sees it
   a few frames late: give state checks a short grace window, measure heights from the root
   part (it stands ~3 studs up), and raycast rather than trust `Humanoid.FloorMaterial`.
   Validate outcomes (distance over time, being in the zone) before paying a reward. A state
   that benefits the player (silent, invulnerable, faster) is ended by the server, never left
   for the client to end.
+
+### Persistence (DataStores)
+
+- One server-only module owns all DataStore access; nothing else calls `DataStoreService`.
+- Load on `PlayerAdded`; save on `PlayerRemoving`, in `game:BindToClose()`, and on a periodic
+  autosave (interval in `GameConfig`).
+- Wrap every DataStore call in `pcall` with retry and backoff. A player whose load failed
+  never plays on a blank profile that would overwrite their real save on exit: kick them,
+  or mark the session read-only. Never pay a reward into a profile that isn't loaded.
+- Use `UpdateAsync` rather than `SetAsync`, and store a schema `Version` so saved data can be
+  migrated.
+- Studio needs "Enable Studio Access to API Services" for DataStores. Without it,
+  persistence fails soft (`warn()` and play unsaved), and Lune tests use an in-memory store.
 
 ### What Rojo Syncs vs. What Studio Owns
 
@@ -141,9 +163,14 @@ it, including mid-build, when a plan task names it:
 ## Coding Standards
 
 - **Architecture**: Follow SOLID principles. Server-side = authoritative logic. Client-side = UI/input. Shared = utilities and config.
-- **Class Design**: Represent all game entities as OOP classes in `Classes/`. Classes own
-  state and behavior; models are visual. State others need to read is mirrored into
-  attributes (see *Runtime State in Attributes*), not kept in model properties or scripts.
+- **Class Design**: Represent all game entities as OOP classes (the `Classes/` folders
+  above). Classes own state and behavior; models are visual. State others need to read is
+  mirrored into attributes (see *Runtime State in Attributes*), not kept in model properties
+  or scripts. Formulas (prices, rates, scaling) live in dependency-free `Modules/*Math.lua`
+  that classes call, so they run under Lune.
+- **Player lifecycle**: everything made for a player (a plot, connections, state) is
+  cleaned up on `PlayerRemoving`. Assume several players per server unless the GDD says
+  otherwise.
 - **Configuration**: All tunable values go in `GameConfig.lua`. Never hardcode game constants in logic scripts.
   `GameConfig` holds **plain Lua values only** (numbers, strings, booleans, tables), never
   `Vector3`/`Color3`/`UDim2`/`CFrame`/`Enum`, so it loads under Lune and Tier 1 tests can use
@@ -155,7 +182,7 @@ it, including mid-build, when a plan task names it:
   matches twice, or misses on whitespace, silently edits the wrong place, and the shell guard
   refuses many such commands. Throwaway scripts (a sweep, a probe) go in the scratchpad
   directory, not `/tmp`.
-- **Code Quality**: Clear names, small focused functions (under 50 lines), consistent formatting, no deep nesting.
+- **Code Quality**: Clear names, small focused functions (under 50 lines), consistent formatting, no deep nesting. Start new modules with `--!strict` where practical.
 - **DRY**: Extract common functionality into reusable modules. Avoid copy-paste.
 - **Comments**: Add comments for non-obvious logic, algorithms, or workarounds. Skip comments that just restate what the code does.
 - **Error Handling**: Use `warn()` for recoverable issues, `error()` for fatal ones. Handle edge cases to prevent crashes.
