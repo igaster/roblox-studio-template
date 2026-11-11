@@ -95,7 +95,8 @@ Anything in `ReplicatedStorage` is readable by exploiters. A class goes in
 - Use `UpdateAsync` rather than `SetAsync`, and store a schema `Version` so saved data can be
   migrated.
 - Studio needs "Enable Studio Access to API Services" for DataStores. Without it,
-  persistence fails soft (`warn()` and play unsaved), and Lune tests use an in-memory store.
+  persistence fails soft (`warn()` and play unsaved). The owner module takes its store as a
+  parameter, so Lune tests pass in a small in-memory stand-in.
 
 ### What Rojo Syncs vs. What Studio Owns
 
