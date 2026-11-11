@@ -17,7 +17,12 @@ Suggested contents as the project grows:
 - `references/<Game>.md`: teardowns of existing games used as inspiration. Start from
   `templates/reference-teardown.md`; written by the `roblox-game-teardown` skill.
 - `STYLE_GUIDE.md`: colors and materials, read by `roblox-asset-generators`.
+- `balance-model.md`: only if the game keeps a balance model (`roblox-game-modeling`). Start
+  from `templates/balance-model.md`.
 - Lore, art direction, or other reference material.
+
+Outside this folder: settled decisions in `../decisions/` (one file each), and the handoff
+page `../STATUS.md` (from `templates/status.md`).
 
 `templates/` is part of the framework; everything else here belongs to the game.
 The `roblox-game-design` skill guides the design process and fills in these templates.

@@ -87,6 +87,8 @@ from there.
 | `make test-all` | Run every Lune test, including slow simulation specs |
 | `make verify` | Check the toolchain, Rojo server and Studio connection (macOS) |
 | `make balance` | Run the game's balance report against its baseline, if it has one (`tests/sim/eval.lua`) |
+| `/kickoff <idea>` | (Claude Code) start a new game through the design pipeline |
+| `/milestone <M2>` | (Claude Code) spec, plan, build and verify one milestone |
 
 ## Project structure
 
@@ -97,6 +99,7 @@ src/
 └── shared/                    # Framework modules → ReplicatedStorage.Shared
 tests/                         # run.lua (entry), framework.lua, harness.lua; specs/ (the game's)
 docs/design/                   # Templates; the game's GDD, milestones and specs
+docs/decisions/                # The game's decision records (one file each)
 plugins/roblox-trainer/        # Optional, off by default: see below
 ```
 

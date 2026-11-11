@@ -16,7 +16,7 @@ it any time.
 |---|---|---|
 | `full` | at every pipeline stage and design choice | nothing material |
 | `milestones` | the selling point, GDD approval, each milestone plan | everything inside an approved milestone |
-| `none` | nothing; reports at milestone ends | everything, logged in the Decisions log |
+| `none` | nothing; reports at milestone ends | everything, recorded in `docs/decisions/` |
 
 **Stop after:** `M<N>` (stop and report after that milestone) or `never`.
 
@@ -50,6 +50,15 @@ One sentence: who the player is and what they get to do.
 | ~30 s | | |
 | 5–10 min session | | |
 | Return visits | | |
+
+## Design targets
+
+Numbered, measurable targets. Each becomes a Tier 1 test where it can (a simulation over the
+`*Math` modules and `GameConfig`), with the target's ID in the check's name, so a retune
+can't silently break the intended pacing.
+
+- DT1: <e.g. first purchase within 60 s of spawning>
+- DT2:
 
 ## Roblox reality check
 
@@ -88,8 +97,6 @@ One line per milestone; details live in `docs/design/milestones/`.
 
 Ideas parked for later, with the reason they're not in the current milestone.
 
-## Decisions log
+## Decisions
 
-| Date | Decision | Why / who decided |
-|---|---|---|
-| | | |
+Settled decisions are recorded in `docs/decisions/`, one file each (see its README).

@@ -5,6 +5,8 @@
 > only after the creator confirms it, or when the GDD's *Owner involvement* pre-approves it
 > (`roblox-lead`).
 
+> GDD design targets touched: DT<n>, …
+
 ## Goal
 
 What this milestone proves or delivers, as one sentence a player could notice.
@@ -31,16 +33,21 @@ Earlier milestones or systems that must exist first (persistence, a feature, art
 
 ## Done when
 
-All feature specs' acceptance criteria pass, plus these milestone-level checks.
-Copy them into `docs/TESTING.md` under a section for this milestone.
+All feature specs' acceptance criteria pass, plus these milestone-level checks. Each has an
+ID (`M<N>-AC1`) and says how it's verified (Tier 1, Tier 2, `[playtest]`, `[visual]`,
+manual); a test checking it carries the ID in its name. Copy them into `docs/TESTING.md`
+under a section for this milestone.
 
-- [ ] `[playtest]` ...
-- [ ] Playtested with real players; findings recorded below.
+- [ ] M<N>-AC1 `[playtest]` ...
+- [ ] M<N>-AC2 Playtested with real players; findings recorded below.
 
 ## Result
 
 Filled in when the milestone ends.
 
 - **Outcome:** go / iterate / cut
+- **Evidence:** per criterion ID: pass / fail / needs the creator, with the proof (test
+  output, TestHooks events, screenshots). A criterion without evidence hasn't passed.
 - **What we learned:**
+- **Framework friction:** `FRAMEWORK_FEEDBACK.md` entries from this milestone, reviewed.
 - **Changes to the GDD or next milestones:**

@@ -22,7 +22,7 @@ skills, the templates or the shared modules fail, mislead, or slow the Lead down
 3. **Framework files the Lead edited:** `git diff <frameworkCommit> -- $(bash
    plugins/roblox-trainer/scripts/commit-framework.sh --list)` plus `git status` for new
    files under those paths (frameworkCommit from `TRAINING_STATE.json` history). Any edit there is a strong signal: the Lead worked around the framework.
-4. **Artifacts:** the milestone file's *Result*, the GDD Decisions log, `docs/TESTING.md`.
+4. **Artifacts:** the milestone file's *Result*, `docs/decisions/`, `docs/STATUS.md`, `docs/TESTING.md`.
 5. **Your own notes** from `owner-proxy`: uncovered questions, and the permission denials
    `lead.py` printed.
 6. **Owner messages:** `.training/messages/<game>/` (every brief and message `lead.py` sent).

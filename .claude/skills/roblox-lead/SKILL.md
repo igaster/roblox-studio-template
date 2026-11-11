@@ -27,7 +27,7 @@ exists, and say what you set. If the request gives no hint, use the defaults
 
 The owner's words override the level: if they asked to be involved only for X, ask only X.
 When their words say they approve something in advance ("decide everything else"), record
-that as a Decisions-log entry and act on it; don't ask again.
+that as a decision record (`docs/decisions/`) and act on it; don't ask again.
 
 ## Asking the owner
 
@@ -35,7 +35,7 @@ that as a Decisions-log entry and act on it; don't ask again.
   question tools or dialogs: the owner may be remote, or another session. This holds even
   when `superpowers:brainstorming` runs the conversation: ask its questions as plain text.
 - Ask only what the contract says to ask. Everything else: decide, mark `(assumed)` in the
-  doc it lands in, and log it in the GDD **Decisions log** (who decided: "Lead (assumed)").
+  doc it lands in, and record it in `docs/decisions/` (decided by: "Lead (assumed)").
 - A question that doesn't change what gets built isn't worth asking: decide it.
 
 ## The loop

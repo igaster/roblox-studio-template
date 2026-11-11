@@ -197,9 +197,17 @@ it, including mid-build, when a plan task names it:
 - **Just do it** (no design process) when the request is concrete: an explicit value ("jump
   power 60"), a typo, a bug fix, or a small feature inside the current milestone's scope.
   Put new numbers in `GameConfig`, run the tests, done.
+- Settled decisions go in `docs/decisions/`, one file each (see its README). Don't
+  relitigate a recorded decision unless the creator reopens it.
 - `CLAUDE.md` is engineering conventions only; `docs/TESTING.md` is the testing
   checklist only. Game design content never goes in either — new design docs go in
   `docs/design/`, and this file is not the place to record them.
+- **The docs are the handoff between chats**: a new chat must be able to continue from the
+  repo alone. At the start of work, read `docs/STATUS.md` (create it from
+  `docs/design/templates/status.md` if missing). Before ending a turn that changed
+  something, update it and the affected docs: what was decided, built or found, and what
+  waits on the creator. Fix a stale doc when you notice it; finished milestone files are a
+  historical record, so note renames in `STATUS.md` instead.
 
 ## API Docs (context7)
 
@@ -231,7 +239,8 @@ to run each tier (also invokable manually with `/roblox-test`).
 
 **Workflow rule:** run Tier 1 after every logic change; request Tier 2 when
 classes/generators change; keep Tier 3 (`docs/TESTING.md`) updated per milestone.
-Never start a new milestone without explicit user confirmation, unless the GDD's
+Every acceptance criterion and design target maps to at least one check, named by its ID
+(`DT1`, `M1-AC2`). Never start a new milestone without explicit user confirmation, unless the GDD's
 *Owner involvement* setting pre-approves it (see `roblox-lead`).
 
 ## Observability (TestHooks)
@@ -276,6 +285,10 @@ Don't go looking for problems; log friction when you actually hit it.
 - **Workaround:** what you did instead
 - **Suggestion:** (optional) how the framework could fix it
 ```
+
+A fix to the framework itself goes in its own commit, separate from game changes, touching
+only framework files, game-agnostic (no game names or game-specific examples), with its
+message prefixed `framework:`, so it can be carried back to the template unchanged.
 
 ## Agent-driven Studio tools
 

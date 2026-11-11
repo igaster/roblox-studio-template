@@ -15,8 +15,8 @@ authority and policy APIs well. The gaps are **player experience before mechanic
 Core rule: every design decision traces to a **pillar**, lands as **`GameConfig` keys**,
 and ships with **acceptance criteria** that become `docs/TESTING.md` items.
 
-You guide; the creator decides. When they override a recommendation, record it in the
-GDD's Decisions log and move on.
+You guide; the creator decides. When they override a recommendation, record it in
+`docs/decisions/` (one file per decision, see its README) and move on.
 
 For end-to-end production with little owner involvement, `roblox-lead` runs this pipeline
 and decides what to ask. If `superpowers:brainstorming` is active, it owns the conversation (one question at a
@@ -59,6 +59,8 @@ Cover these in order, experience first, mechanics last:
 4. **Roblox reality check**: `references/roblox-platform.md`. Flag any loop that breaks at
    low player counts before discussing mechanics.
 5. **Riskiest assumption**, usually "is the core loop fun?" or the selling point itself.
+6. **Design targets**: numbered, measurable (`DT1`: "first purchase within 60 s"). They become
+   Tier 1 tests, so pacing survives later tuning.
 
 **With a teardown, draft instead of asking.** Write a proposed fantasy, pillars and loop
 derived from the chosen Y and the teardown's *Keep* / *Change* columns, and ask the creator
@@ -96,7 +98,8 @@ GDD's *Owner involvement* pre-approves it (`roblox-lead`).
 ### 5. Milestone result
 After building: run the milestone's checks (`roblox-test`, `roblox-playtest`) and ask the
 creator to playtest. Fill in the milestone's *Result* (go / iterate / cut, what we
-learned), update the GDD, then propose the next milestone's spec (back to stage 3).
+learned, evidence per criterion, the framework friction from `FRAMEWORK_FEEDBACK.md`), update
+the GDD, then propose the next milestone's spec (back to stage 3).
 
 ### End every stage the same way
 

@@ -26,6 +26,11 @@ lune run tests/run.lua   # from the project root (or `make test`); exits non-zer
   `tests/specs/<Module>.spec.lua`. It's found automatically and returns `function(H)`,
   which receives the shared helpers `H.check`, `H.eq`, `H.near`, `H.section` (shape in the
   header of `tests/run.lua`; `ExampleMath.spec.lua` is a sample).
+- **Design targets and acceptance criteria are tests.** When the GDD or a spec states a
+  measurable target (pacing, difficulty, time-to-X), simulate it over the pure modules and
+  `GameConfig` (step a session second by second, assert the target), and put its ID in the
+  check's name (`"DT2: first purchase within 60 s"`, `"M1-AC3: ..."`), so a failure points
+  back to the spec.
 - **Long simulations** go in `<Name>.slow.spec.lua`: `make test` skips them, `make test-all`
   runs them. Keep `make test` fast enough to run after every change.
 - `tests/run.lua`, `tests/harness.lua` and `tests/framework.lua` (the framework's own
