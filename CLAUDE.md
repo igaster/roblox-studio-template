@@ -206,45 +206,26 @@ Never start a new milestone without explicit user confirmation, unless the GDD's
 
 ## Observability (TestHooks)
 
-`shared/TestHooks.lua` (synced to `ReplicatedStorage.Shared.TestHooks`) ships as part
-of this template — every game gets it for free, no per-game debug code to write.
-It exists because live-verifying gameplay (via `roblox-playtest`)
-kept stalling on two things: reaching the state worth testing, and finding signal in
-console output buried under unrelated noise. `require()` it in server-side services and
-classes (not in pure `*Math` modules, which must stay Lune-testable).
+`shared/TestHooks.lua` (synced to `ReplicatedStorage.Shared.TestHooks`) gives every game
+state dumps, structured events, teleport-to-entity and Studio-only test commands for live
+verification, with no per-game debug code. `require()` it in server-side services and
+classes (not in pure `*Math` modules, which must stay Lune-testable). Two conventions make
+it work:
 
-**Minimum setup — two calls, right where you already are:**
+1. `TestHooks.tagInteractable(instance)`: once, wherever you create anything a player can
+   walk up to and enter/use/collect (a vehicle, a chest, an NPC).
+2. `TestHooks.log(category, message, data)`: at meaningful state transitions (destroyed,
+   collected, phase changed, scored). Use it *instead of* a plain `warn()`/`print()` for
+   anything a tester would care about: it still prints, and the event can be filtered and
+   read back afterwards, as ground truth instead of guesswork. For high-volume events (one
+   per kill), call `TestHooks.setQuiet(category)` once so they're recorded without flooding
+   Output.
 
-1. `TestHooks.tagInteractable(instance)` — once, wherever you create anything a
-   player can walk up to and enter/use/collect (a vehicle, a chest, an NPC). One line.
-2. `TestHooks.log(category, message, data)` — at meaningful state transitions
-   (destroyed, collected, phase changed, scored). Use it *instead of* a plain
-   `warn()`/`print()` for anything a tester would plausibly care about — it still
-   prints, so nothing is lost, but it's also filterable afterward. This turns "a tester
-   infers a vehicle was destroyed because a part disappeared" into "a tester reads
-   an actual `{category="Collision", reason="hazard"}` event" — ground truth instead
-   of guesswork.
-
-Everything else below works automatically once those two conventions are followed —
-no additional code needed:
-
-| Function | Purpose |
-|---|---|
-| `TestHooks.tagInteractable(instance, tag?)` | Tag an entity as interactable (default tag `"Interactable"`). |
-| `TestHooks.log(category, message, data?)` | Record a structured, filterable event (also prints). |
-| `TestHooks.getEvents(sinceTime?, category?)` | Read back recorded events, filtered by time and/or category. Keeps the newest 1000. |
-| `TestHooks.dumpState(tags?)` | Snapshot: every `Player`'s attributes, plus every tagged instance's position + attributes. Defaults to the `"Interactable"` tag. |
-| `TestHooks.teleportNear(player, tag?)` | Move a player's character next to the nearest tagged instance — no need to know its name or position in advance. |
-| `TestHooks.registerCommand(name, fn)` / `runCommand(name, ...)` | Studio-only test commands that act on a live service's private state (set currency, force a save). Register in the service's `init()`; run from `execute_luau`. |
-| `TestHooks.waitForEvent(since, category, message?, timeout?)` | Wait for an event logged after an action (take `since = os.clock()` before acting). Use it instead of waiting for a state, which may already hold. |
-| `TestHooks.muteAudio(on?)` | Studio only: silence all game sound for a test run (smoke test, playtest, fast match); `muteAudio(false)` restores it. Players are never affected. |
-
-Server-authoritative like everything else here: call these from server-side code,
-and read results back via `execute_luau` on the **Server** datamodel. Events are stored
-in `ServerStorage.TestHooksEvents`, so any server-side `require()` copy sees them
-(including `execute_luau`'s fresh copy). Full usage patterns live in the
-`roblox-playtest` skill — read it there rather than reinventing the calling
-convention per game.
+When a test needs state only a service owns (currency, timers, saves), register a
+Studio-only command in that service's `init()` (`TestHooks.registerCommand`) instead of a
+debug remote. Call these from server-side code, and read results back via `execute_luau`
+on the **Server** datamodel. The full API and calling patterns, including the attribute
+route that works when MCP code is sandboxed, are in the `roblox-playtest` skill.
 
 ## Framework friction
 

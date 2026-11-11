@@ -117,6 +117,23 @@ Key pitfalls this template avoids, each hit at least once in practice:
 
 ## Generic scenario setup — use TestHooks first
 
+TestHooks API (`src/shared/TestHooks.lua`, server side unless noted):
+
+| Function | Purpose |
+|---|---|
+| `tagInteractable(instance, tag?)` | Tag an entity as interactable (default tag `"Interactable"`). |
+| `log(category, message, data?)` | Record a structured, filterable event (also prints, unless the category is quiet). |
+| `setQuiet(category, quiet?)` | Keep recording a high-volume category (one event per kill) without printing it. |
+| `getEvents(sinceTime?, category?)` | Read back recorded events, filtered by time and/or category. Keeps the newest `MAX_EVENTS` (10,000). |
+| `waitForEvent(since, category, message?, timeout?)` | Wait for an event logged after an action (take `since = os.clock()` before acting). Use it instead of waiting for a state, which may already hold. |
+| `dumpState(tags?)` | Snapshot: every `Player`'s attributes, plus every tagged instance's position + attributes. |
+| `teleportNear(player, tag?)` | Move a player's character next to the nearest tagged instance. |
+| `registerCommand(name, fn)` / `runCommand(name, ...)` | Studio-only test commands that act on a live game's private state (set currency, force a save). Register in a service's or controller's `init()`. Also callable through attributes, on server and client (below). |
+| `muteAudio(on?)` | Studio only: silence all game sound for a test run; `muteAudio(false)` restores it. Players are never affected. |
+
+Events live in `ServerStorage.TestHooksEvents`, so any server-side `require()` copy sees
+them, including `execute_luau`'s fresh copy.
+
 Reaching the state worth testing is usually the actual bottleneck, not the
 testing itself. `ReplicatedStorage.Shared.TestHooks` ships with every game
 (see `CLAUDE.md`'s "Observability (TestHooks)") for exactly this — **check
@@ -139,13 +156,29 @@ local recent = TestHooks.getEvents(os.clock() - 10) -- last 10 seconds, any cate
 
 -- Act on a live service's private state (currency, timers, saves) through a
 -- Studio-only command the service registered with TestHooks.registerCommand:
-TestHooks.runCommand("setCrumbs", player, 5000)
+TestHooks.runCommand("setCrumbs", player.Name, 5000)
 ```
 
 `execute_luau` gets a fresh copy of every module, so it can't reach a service's
 private tables directly. When a test needs to set state that only a service owns,
 add a `TestHooks.registerCommand` in that service's `init()` rather than a
-game-specific debug remote.
+game-specific debug remote. Give handlers plain arguments (a player's `Name`, not the
+`Player`), so the same command also works through attributes.
+
+**When `execute_luau` is sandboxed** (no `require`, no Bindable invokes; see
+`roblox-studio-mcp`), call a command through attributes instead. This also reaches
+commands a client controller registered (Client datamodel, on the `LocalPlayer`):
+
+```lua
+local target = game:GetService("ServerStorage") -- client: game.Players.LocalPlayer
+target:SetAttribute("Dev_setCrumbs_Done", false)
+target:SetAttribute("Dev_setCrumbs", '["Player1", 5000]') -- JSON array of arguments
+-- next call: poll until Dev_setCrumbs_Done is true, then read Dev_setCrumbs_Result
+-- (the return value, non-strings as JSON, or "error: ...")
+```
+
+A game can register its smoke test as a command (`registerCommand("SmokeTest", ...)`), so
+Tier 2 still runs while sandboxed.
 
 If a game predates `TestHooks` or a builder hasn't adopted the tagging/
 logging conventions yet, fall back to the manual techniques:

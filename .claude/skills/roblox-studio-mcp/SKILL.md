@@ -96,6 +96,16 @@ not a silent one.
   prototype-then-convert workflow: use these to explore a look, then hand-write a
   generator module for anything that ships.
 
+## When `execute_luau` is sandboxed
+
+After a Studio restart, MCP code can run without the "Network" capability: a `require` of a
+game module, invoking a BindableFunction, or parenting a Script into ServerScriptService
+fails with "...has an additional value for the Capabilities property: Network". Reading and
+writing attributes still works, so reading `TestHooks` events and state still works by hand
+(`ServerStorage.TestHooksEvents` children, `GetAttributes()`). Drive the game through
+**dev commands over attributes** instead (`roblox-playtest`, *Generic scenario setup*): the
+handler runs inside the game, with its permissions.
+
 ## Known failures
 
 - **`start_stop_play` stuck on "Start play hasn't finished yet"** while other tools keep

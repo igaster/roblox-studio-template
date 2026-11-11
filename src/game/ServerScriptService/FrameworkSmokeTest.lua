@@ -54,13 +54,22 @@ function FrameworkSmokeTest.run(): boolean
 	end
 	check("cross-copy events: a fresh module copy reads logged events", seen)
 
-	for i = 1, 510 do
+	-- A full store, logged quietly (setQuiet: recorded, not printed).
+	TestHooks.setQuiet("FrameworkSmokeBulk")
+	local tBulk = os.clock()
+	for i = 1, TestHooks.MAX_EVENTS + 10 do
 		TestHooks.log("FrameworkSmokeBulk", "bulk " .. i)
 	end
+	local logSeconds = os.clock() - tBulk
+	local tRead = os.clock()
 	local all = TestHooks.getEvents()
+	local readSeconds = os.clock() - tRead
+	print(string.format("  (full store: %d logs took %.2f s, one getEvents %.3f s)", TestHooks.MAX_EVENTS + 10, logSeconds, readSeconds))
 	local bulk = TestHooks.getEvents(nil, "FrameworkSmokeBulk")
-	check("bounded: at most 500 events kept", #all <= 500)
+	check("bounded: at most MAX_EVENTS kept", #all <= TestHooks.MAX_EVENTS)
 	check("bounded: oldest events dropped first", bulk[1] ~= nil and bulk[1].message ~= "bulk 1")
+	check("setQuiet: quiet events are still recorded", #bulk > 0)
+	TestHooks.setQuiet("FrameworkSmokeBulk", false)
 
 	local part = Instance.new("Part")
 	local ok = pcall(TestHooks.log, "FrameworkSmokeData", "non-json", {
@@ -132,6 +141,20 @@ function FrameworkSmokeTest.run(): boolean
 	check("commands: re-register replaces", product == 6)
 	local okUnknown, err = pcall(other.runCommand, "FrameworkSmokeMissing")
 	check("commands: unknown name errors with the list", not okUnknown and string.find(tostring(err), "FrameworkSmokeAdd", 1, true) ~= nil)
+
+	-- The attribute route (works when execute_luau is sandboxed): JSON-array arguments.
+	local key = TestHooks.DEV_PREFIX .. "FrameworkSmokeAdd"
+	ServerStorage:SetAttribute(key .. "_Done", false)
+	ServerStorage:SetAttribute(key, "[4, 5]")
+	local deadline = os.clock() + 3
+	while ServerStorage:GetAttribute(key .. "_Done") ~= true and os.clock() < deadline do
+		task.wait()
+	end
+	check("commands: attribute request runs the handler", ServerStorage:GetAttribute(key .. "_Result") == "20")
+	check("commands: attribute request is cleared", ServerStorage:GetAttribute(key) == nil)
+	for _, suffix in ipairs({ "_Done", "_Result" }) do
+		ServerStorage:SetAttribute(key .. suffix, nil)
+	end
 	local commands = ServerStorage:FindFirstChild("TestHooksCommands")
 	local cmd = commands and commands:FindFirstChild("FrameworkSmokeAdd")
 	if cmd then

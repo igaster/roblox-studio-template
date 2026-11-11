@@ -32,7 +32,7 @@ local TestHooks = {}
 local DEFAULT_TAG = "Interactable"
 -- The store keeps the newest MAX_EVENTS events; older ones are dropped. A long test that
 -- logs a lot should read its events as it goes (take `since` before each action).
-local MAX_EVENTS = 1000
+local MAX_EVENTS = 10000
 TestHooks.MAX_EVENTS = MAX_EVENTS
 local STORE_NAME = "TestHooksEvents"
 local MAX_DATA_DEPTH = 6
@@ -128,8 +128,12 @@ end
 -- raw console output gets drowned out by unrelated noise fast; this doesn't.
 -- Still prints too, so it's a strict addition, not a replacement for
 -- anything non-test code already relies on.
+local quietCategories: { [string]: boolean } = {}
+
 function TestHooks.log(category, message, data)
-	print(string.format("[TestHooks:%s] %s", category, message))
+	if not quietCategories[tostring(category)] then
+		print(string.format("[TestHooks:%s] %s", category, message))
+	end
 	local store = getStore()
 	if not store then
 		return
@@ -144,6 +148,13 @@ function TestHooks.log(category, message, data)
 	event.Parent = store
 	store:SetAttribute("NextSeq", seq + 1)
 	trim(store)
+end
+
+-- Keep recording a high-volume category (one event per kill) without printing it, so Output
+-- stays readable. setQuiet(category, false) prints it again. Applies to logs made through
+-- this module copy: call it from the game code that logs the category.
+function TestHooks.setQuiet(category: string, quiet: boolean?)
+	quietCategories[category] = if quiet == false then nil else true
 end
 
 -- Return recorded events at or after sinceTime (an os.clock() value from an
@@ -259,12 +270,23 @@ function TestHooks.teleportNear(player, tag)
 	return true, nearest
 end
 
--- Dev commands: let a test act on a live service's private state (set currency, force a
--- save, skip a timer). execute_luau gets a fresh copy of every module, so it can't reach
--- the running service's tables; a command is a BindableFunction in
--- ServerStorage.TestHooksCommands that runs the registering copy's function.
+-- Dev commands: let a test act on a live game's private state (set currency, force a save,
+-- run the smoke test). execute_luau gets a fresh copy of every module, so it can't reach the
+-- running game's tables; a registered command runs the registering copy's function.
+-- Two ways to call one:
+--   * runCommand(name, ...) from server-side execute_luau: a BindableFunction in
+--     ServerStorage.TestHooksCommands. Fails when execute_luau runs sandboxed (no "Network"
+--     capability: Bindable invokes and require of game modules are refused).
+--   * Attributes, which work even sandboxed, on the server and on a client: set
+--     "Dev_<name>_Done" = false, then "Dev_<name>" = a JSON array of arguments (or any other
+--     string, passed as the one argument) on ServerStorage (server) or the LocalPlayer
+--     (client). Poll "Dev_<name>_Done" until true and read "Dev_<name>_Result": the return
+--     value (non-strings as JSON), or "error: ...". Arguments are plain values, so a handler
+--     meant for this route takes plain values (a player's Name, not the Player).
 -- Studio only: outside Studio registerCommand does nothing and runCommand errors.
 local COMMANDS_NAME = "TestHooksCommands"
+local DEV_PREFIX = "Dev_"
+TestHooks.DEV_PREFIX = DEV_PREFIX
 
 local function commandsFolder(create: boolean): Instance?
 	local ServerStorage = game:GetService("ServerStorage")
@@ -277,13 +299,61 @@ local function commandsFolder(create: boolean): Instance?
 	return folder
 end
 
--- Register a Studio-only test command, e.g. in a service's init():
---   TestHooks.registerCommand("setCrumbs", function(player, n) profiles[player].Crumbs = n end)
--- Registering the same name again replaces it.
+local function decodeArgs(request: string): { any }
+	local ok, decoded = pcall(HttpService.JSONDecode, HttpService, request)
+	if ok and type(decoded) == "table" and isArray(decoded) then
+		return decoded
+	end
+	return { request }
+end
+
+local function formatResult(ok: boolean, result: any): string
+	if not ok then
+		return "error: " .. tostring(result)
+	elseif type(result) == "string" then
+		return result
+	end
+	local plain = toPlain(result, 0)
+	local encoded, json = pcall(HttpService.JSONEncode, HttpService, plain)
+	return if encoded then json else tostring(result)
+end
+
+local attributeConnections: { [string]: RBXScriptConnection } = {}
+
+-- Answers "Dev_<name>" requests on `target`; each request runs fn once, in its own thread.
+local function listenOnAttribute(target: Instance, name: string, fn: (...any) -> ...any)
+	local key = DEV_PREFIX .. name
+	if attributeConnections[key] then
+		attributeConnections[key]:Disconnect()
+	end
+	attributeConnections[key] = target:GetAttributeChangedSignal(key):Connect(function()
+		local request = target:GetAttribute(key)
+		if request == nil then
+			return
+		end
+		target:SetAttribute(key .. "_Done", false)
+		task.spawn(function()
+			local ok, result = pcall(fn, table.unpack(decodeArgs(tostring(request))))
+			target:SetAttribute(key .. "_Result", formatResult(ok, result))
+			target:SetAttribute(key, nil)
+			target:SetAttribute(key .. "_Done", true)
+		end)
+	end)
+end
+
+-- Register a Studio-only test command, e.g. in a service's or controller's init():
+--   TestHooks.registerCommand("setCrumbs", function(playerName, n) ... end)
+-- On the server it answers runCommand and ServerStorage attributes; on a client, the
+-- LocalPlayer's attributes. Registering the same name again replaces it.
 function TestHooks.registerCommand(name: string, fn: (...any) -> ...any)
-	if not RunService:IsStudio() or not RunService:IsServer() then
+	if not RunService:IsStudio() then
 		return
 	end
+	if not RunService:IsServer() then
+		listenOnAttribute(Players.LocalPlayer, name, fn)
+		return
+	end
+	listenOnAttribute(game:GetService("ServerStorage"), name, fn)
 	local folder = commandsFolder(true) :: Instance
 	local old = folder:FindFirstChild(name)
 	if old then
@@ -296,7 +366,7 @@ function TestHooks.registerCommand(name: string, fn: (...any) -> ...any)
 end
 
 -- Run a registered command from any server-side copy (e.g. execute_luau on Server):
---   TestHooks.runCommand("setCrumbs", game.Players:GetPlayers()[1], 5000)
+--   TestHooks.runCommand("setCrumbs", "Player1", 5000)
 function TestHooks.runCommand(name: string, ...: any): ...any
 	assert(RunService:IsStudio(), "TestHooks.runCommand: Studio only")
 	local folder = commandsFolder(false)
@@ -310,7 +380,6 @@ function TestHooks.runCommand(name: string, ...: any): ...any
 	end
 	return (bindable :: BindableFunction):Invoke(...)
 end
-
 
 -- Silence the game in Studio during agent test runs (smoke tests, playtests, fast matches):
 -- every client's shared/TestAudio watcher (started by ServiceLoader) zeroes all sound while
