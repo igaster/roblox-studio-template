@@ -22,9 +22,12 @@ lune run tests/run.lua   # from the project root (or `make test`); exits non-zer
 ```
 
 - **Run this yourself** after any change to pure logic — no Studio needed.
-- When adding logic, extract the pure part into a `*Math`/helper module and add
-  assertions to `tests/game.lua` (the game's tests) with the shared helpers:
-  `local H = require("./harness")`, then `H.section`, `H.check`, `H.eq`, `H.near`.
+- When adding logic, extract the pure part into a `*Math`/helper module and add a spec,
+  `tests/specs/<Module>.spec.lua`. It's found automatically and returns `function(H)`,
+  which receives the shared helpers `H.check`, `H.eq`, `H.near`, `H.section` (shape in the
+  header of `tests/run.lua`; `ExampleMath.spec.lua` is a sample).
+- **Long simulations** go in `<Name>.slow.spec.lua`: `make test` skips them, `make test-all`
+  runs them. Keep `make test` fast enough to run after every change.
 - `tests/run.lua`, `tests/harness.lua` and `tests/framework.lua` (the framework's own
   checks: GameConfig is plain Lua, ServiceLoader discovery) belong to the framework;
   don't edit them for a game.

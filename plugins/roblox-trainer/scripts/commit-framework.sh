@@ -28,8 +28,10 @@ FRAMEWORK_PATHS=(CLAUDE.md README.md .claude .claude-plugin .github plugins scri
 	tests/harness.lua tests/framework.lua tests/run.lua
 	.ledger)
 
-# Template-shipped, game-owned (see above). tests/suite.lua is the old name of tests/game.lua.
-STARTER_PATHS=(tests/game.lua tests/suite.lua src/game/ReplicatedStorage/GameConfig.lua
+# Template-shipped, game-owned (see above). tests/game.lua and tests/suite.lua are older homes
+# of the game's tests, now tests/specs/.
+STARTER_PATHS=(tests/specs/ExampleMath.spec.lua tests/game.lua tests/suite.lua
+	src/game/ReplicatedStorage/GameConfig.lua
 	src/game/ReplicatedStorage/Modules/ExampleMath.lua
 	src/game/ServerScriptService/SmokeTest.lua)
 

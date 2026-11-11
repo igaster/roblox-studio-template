@@ -1,6 +1,6 @@
 --!strict
 -- The framework's own headless checks (framework file; games don't edit it).
--- They hold for every game built on this template. Game tests go in tests/game.lua.
+-- They hold for every game built on this template. Game tests go in tests/specs/ (see run.lua).
 
 local H = require("./harness")
 

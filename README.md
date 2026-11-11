@@ -82,7 +82,8 @@ from there.
 | Command | Description |
 |---|---|
 | `make serve` | Start the Rojo server |
-| `make test` | Run the headless Lune tests |
+| `make test` | Run the headless Lune tests (skips slow specs) |
+| `make test-all` | Run every Lune test, including slow simulation specs |
 | `make verify` | Check the toolchain, Rojo server and Studio connection (macOS) |
 | `make sim` | Run the game's balance simulator, if it has one (`tests/balance_sim.lua`) |
 
@@ -93,7 +94,7 @@ src/
 ├── game/                      # The game: GameConfig, Classes/, Modules/, Services/ (server),
 │                              # Controllers/ (client), AssetGenerators/, SmokeTest
 └── shared/                    # Framework modules → ReplicatedStorage.Shared
-tests/                         # run.lua (entry), framework.lua, game.lua, harness.lua
+tests/                         # run.lua (entry), framework.lua, harness.lua; specs/ (the game's)
 docs/design/                   # Templates; the game's GDD, milestones and specs
 plugins/roblox-trainer/        # Optional, off by default: see below
 ```
