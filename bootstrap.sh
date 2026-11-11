@@ -12,7 +12,7 @@ echo "==> Installing Rojo plugin into Roblox Studio..."
 rojo plugin install
 
 echo "==> Verifying headless test setup (Lune)..."
-lune run tests/suite.lua
+lune run tests/run.lua
 
 echo "==> Registering the Roblox Studio MCP server with Claude Code..."
 MCP_COMMAND="/Applications/RobloxStudio.app/Contents/MacOS/StudioMCP"
@@ -31,7 +31,7 @@ fi
 
 echo ""
 echo "Done. Next steps:"
-echo "  1. Rename the project in default.project.json and lobby.project.json"
+echo "  1. Rename the project in default.project.json"
 echo "  2. Run: make serve"
 echo "  3. Open Roblox Studio and connect the Rojo plugin to localhost:34872"
 echo "  4. In Studio: Assistant -> ... -> Manage MCP Servers -> enable 'Enable Studio as MCP server'"

@@ -18,9 +18,9 @@ if %ERRORLEVEL% neq 0 (
 )
 
 echo =^> Verifying headless test setup (Lune)...
-lune run tests/suite.lua
+lune run tests/run.lua
 if %ERRORLEVEL% neq 0 (
-    echo ERROR: lune run tests/suite.lua failed.
+    echo ERROR: lune run tests/run.lua failed.
     exit /b %ERRORLEVEL%
 )
 
@@ -45,7 +45,7 @@ if %ERRORLEVEL% neq 0 (
 
 echo.
 echo Done. Next steps:
-echo   1. Rename the project in default.project.json and lobby.project.json
+echo   1. Rename the project in default.project.json
 echo   2. Run: make serve
 echo   3. Open Roblox Studio and connect the Rojo plugin to localhost:34872
 echo   4. In Studio: Assistant -^> ... -^> Manage MCP Servers -^> enable 'Enable Studio as MCP server'

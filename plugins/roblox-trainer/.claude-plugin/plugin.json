@@ -1,0 +1,6 @@
+{
+  "name": "roblox-trainer",
+  "version": "0.1.0",
+  "description": "Framework training: runs a game through the framework's Lead as its owner, reviews the run, and proposes framework fixes. For framework maintainers; off by default.",
+  "author": { "name": "Giannis Gasteratos" }
+}

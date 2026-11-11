@@ -1,6 +1,6 @@
 ---
 name: roblox-asset-generators
-description: Use when adding, prototyping, or shipping a visual/3D Roblox asset (model, tool, part, GUI) — e.g. "add a sword tool", "spawn a chest model", "create a new NPC model", "prototype a few weapon looks" — and there's no existing Studio instance to clone from yet. Covers both quick MCP-generated prototypes and the version-controlled generator-module pattern for shipping.
+description: Use when adding, prototyping, or shipping a visual/3D Roblox asset, level or UI (model, tool, part, greybox room or level, HUD/ScreenGui) — e.g. "add a sword tool", "spawn a chest model", "build the greybox room", "add a HUD" — or when creating or editing any file under AssetGenerators/, including when a plan task calls for a generator.
 ---
 
 # Roblox Asset Generators
@@ -67,19 +67,25 @@ One file per asset, grouped by type. Module name matches the asset: a
 --   local gen = require(game.ServerStorage.AssetGenerators.Tools.SwordGenerator)
 --   gen.createSword().Parent = workspace
 
+-- GameConfig.Sword = { HandleSize = { X = 1, Y = 4, Z = 1 }, Color = { R = 200, G = 200, B = 210 } }
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage.GameConfig)
+local ConfigTypes = require(ReplicatedStorage.Shared.ConfigTypes)
 
 local SwordGenerator = {}
 
 function SwordGenerator.createSword()
+	local cfg = GameConfig.Sword
 	local tool = Instance.new("Tool")
 	tool.Name = "Sword"
 	tool.Grip = CFrame.new(0, 0, -1) * CFrame.Angles(math.rad(-90), 0, 0)
 
 	local handle = Instance.new("Part")
 	handle.Name = "Handle"
-	handle.Size = GameConfig.Sword.HandleSize
+	handle.Size = ConfigTypes.vector3(cfg.HandleSize)
+	handle.Color = ConfigTypes.color3(cfg.Color)
+	handle.Anchored = false -- deliberate: a held tool must move with the character (rule 6)
 	handle.Parent = tool
 
 	return tool
@@ -96,53 +102,83 @@ Rules the pattern depends on:
    for later `:Clone()`ing.
 2. **Sizes, colors, damage, cooldowns — anything tunable — come from
    `GameConfig`, not hardcoded in the generator.** Same rule as the rest of the
-   codebase; generators aren't an exception.
+   codebase; generators aren't an exception. `GameConfig` stores them as plain
+   tables/strings; convert with `Shared.ConfigTypes` (`vector3`, `color3`, `udim2`,
+   `enum`) inside the generator.
 3. **The instance stays state-free.** If the asset later needs runtime state
    (e.g. `IsOpen`, `Cooling`), that's an attribute set by the class that owns
    the entity's behavior, not a field baked into the generator.
 4. **Gameplay logic never builds instances inline.** A service script
-   (`ServerScriptService/*.server.lua`) requires the generator (or clones a
+   (`ServerScriptService/Services/*Service.lua`) requires the generator (or clones a
    template it produced) — it doesn't call `Instance.new` to build game
    objects itself. This is what keeps the asset regenerable and the logic
    testable independent of the visual.
-5. **A "create if missing" staging routine must actually be idempotent —
-   destroy and regenerate, don't just skip if something's already there.**
-   `Workspace` isn't Rojo-synced (`CLAUDE.md`: "Studio owns... placed
-   instances"), so anything a generator stages there (e.g. a design-time
-   `Workspace.AssetStage` folder) can get saved into the place file as-is.
-   A startup routine that only creates the staged asset `if not
-   Workspace:FindFirstChild(...)` will silently keep serving that *stale,
-   saved* version forever after — even once the generator itself is fixed
-   in source — since the "already exists" check short-circuits regeneration.
-   Confirmed live (speed-rush): a pre-refactor course (wrong tile names, no
-   gap/checkpoint/finish objects) persisted across multiple rounds of
-   correct source fixes for exactly this reason, and was mistaken for
-   several different bugs before the actual cause (stale Workspace content,
-   not the generator) was found. Always destroy any existing staged
-   instance before regenerating, every server start — don't skip based on
-   existence.
-6. **Set `Anchored` explicitly on every generated `BasePart` — don't rely on
-   Roblox's `false` default.** An unanchored part falls under gravity the
-   moment Play starts. A `CanCollide = true` part usually settles against
-   other geometry after a small, easy-to-miss fall and still looks "fine."
-   A `CanCollide = false` part (a trigger pad, a visual marker, anything
-   non-solid) falls completely unobstructed and can cross
-   `workspace.FallenPartsDestroyHeight` (default -500) in just a few
-   seconds at default gravity — Roblox's built-in fallen-parts cleanup then
-   removes it. That removal fires `AncestryChanged` but **not** the
-   scripted `Destroying` event (it's an engine-level cleanup, not a Luau
-   `:Destroy()` call), which looks exactly like a mysterious, hard-to-debug
-   vanishing-instance bug — confirmed live (speed-rush): this cost an
-   entire investigation across two separate rounds, including several ruled-out
-   theories (`Workspace.StreamingEnabled`, code review of every `:Destroy()`
-   call site) before the actual cause (nothing had `Anchored = true` except
-   one part that happened to need it for an unrelated reason) was found.
-   `debug.traceback()` attached to the removal event will not help distinguish
-   this from a real `:Destroy()` call — Roblox event connections always run in
-   a fresh coroutine with no calling Luau stack above them. If every generated
-   `BasePart` sets `Anchored` explicitly (`true` for static/trigger geometry,
-   `false` only when the part is deliberately meant to be physics-driven),
-   this entire bug class can't occur.
+5. **Staging is destroy-and-regenerate, never "create if missing".** Workspace content can
+   be saved into the place file; an existence check then keeps serving that stale copy
+   forever after the generator is fixed (this cost a whole investigation once). Destroy any
+   existing staged instance and rebuild, every time.
+6. **Set `Anchored` explicitly on every generated `BasePart`** (`true` for static and
+   trigger geometry, `false` only for deliberately physics-driven parts). An unanchored
+   `CanCollide = false` part falls through the world and is silently removed by
+   `FallenPartsDestroyHeight` cleanup, which fires `AncestryChanged` but not `Destroying`:
+   it looks like a mysterious vanishing-instance bug.
+
+## Level generators
+
+A greybox/prototype **level** (a room, an arena, a course) is generated too, with two
+differences from a reusable asset:
+
+- `build()` **owns a fixed home** (e.g. `workspace.HeistRoom`): it destroys any existing copy
+  there and builds a new one. Rule 1's "don't parent" applies to reusable assets, not to
+  levels.
+- A service calls `build()` **on every server start**, unconditionally (rule 5). Never "build
+  if missing".
+- When real art is hand-placed in Studio, retire the generator; the place file owns the level
+  from then on (`CLAUDE.md`, *What Rojo Syncs vs. What Studio Owns*).
+- New places from Studio's Baseplate template have a Baseplate with its top at Y = 0: put
+  generated floors slightly above it (`Greybox.FLOOR_TOP`, or remove the Baseplate) to avoid
+  z-fighting.
+- Use `ReplicatedStorage.Shared.Greybox` for the repetitive parts: `part` (anchored, smooth,
+  colour from a `GameConfig` table), `folder`, `marker` (invisible position marker), `spawn`
+  (the level's SpawnLocation; disables any other, such as the place file's). Keep
+  game-specific helpers (signs, materials, effects) in the game's own generators.
+- Prototype **lighting** (`Lighting` properties, atmosphere, sky) is set the same way: a
+  generator applies it at every server start, with its values in `GameConfig`, until lighting
+  is tuned by hand in Studio.
+
+## Third-party assets
+
+Sounds, meshes and decals from the Creator Store are referenced by id, not generated:
+
+- Ids live in `GameConfig` (e.g. `GameConfig.Sounds.Grab = "rbxassetid://..."`); an empty id
+  means "none", and the game must work silently without it.
+- Prefer licensed sources: Roblox's partner audio libraries (descriptions say "Courtesy of …",
+  e.g. Pro Sound Effects, APM Music) and Roblox-made assets. `search_asset`'s
+  verified-creators filter isn't enough on its own: check each result's description and
+  creator, and that it suits the game's audience.
+- Check every id loads in a Play session (`ContentProvider:PreloadAsync`) before relying on
+  it, and list the ids with their source in the feature spec.
+
+## GUI generators
+
+`ServerStorage` (where generators live) is invisible to clients, so a client controller can't
+require a GUI generator. Pattern:
+
+1. A server service builds the UI from `GUI/<Name>Generator.lua` and parents a copy into each
+   player's `PlayerGui` on join (and on respawn if `ResetOnSpawn` is true).
+2. The client controller (`Controllers/<Name>Controller.lua`) does
+   `player:WaitForChild("PlayerGui"):WaitForChild("<Name>")` and binds to attributes/remotes.
+   It never builds the UI itself.
+
+**Screen UI always draws over in-world UI.** Every `ScreenGui` draws over every
+`BillboardGui` (health bars, prompts, labels), whatever `ZIndex` or `DisplayOrder` say. So:
+- keep screen plates small and near the edges; a wide bar at the top hides whatever is
+  behind it in the world;
+- make large plates semi-transparent (`CanvasGroup` with `GroupTransparency`). Fade them
+  while world UI projects behind them (`Camera:WorldToViewportPoint` on the billboards'
+  adornees, a few times a second);
+- a layout check of screen rects can't see this; check it in Play with world UI behind the
+  plate.
 
 ## Quick Reference
 

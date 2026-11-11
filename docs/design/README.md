@@ -7,9 +7,21 @@ record what the game *is*, not how it's built.
 
 Suggested contents as the project grows:
 
-- `GDD.md` — the game design document: concept, core loop, systems overview.
-- `features/` — one file per feature spec (mechanics, UI flows, economy).
-- `milestones/` — per-milestone scope and acceptance notes.
+- `GDD.md`: the game design document. Start from `templates/GDD.md`.
+- `milestones/M<N>-<name>.md`: one file per milestone: its goal, the feature specs it
+  includes, and when it's done. Start from `templates/milestone.md`. Development is
+  organized around milestones: a new game or a large feature is planned as a sequence
+  of milestones, each with its own specs. A milestone's implementation plan lives
+  next to it as `M<N>-<name>-plan.md`.
+- `features/<Name>.md`: one spec per feature. Start from `templates/feature-spec.md`.
+- `references/<Game>.md`: teardowns of existing games used as inspiration. Start from
+  `templates/reference-teardown.md`; written by the `roblox-game-teardown` skill.
+- `STYLE_GUIDE.md`: colors and materials, read by `roblox-asset-generators`.
 - Lore, art direction, or other reference material.
 
-There's no required structure — add files and subfolders as the game needs them.
+`templates/` is part of the framework; everything else here belongs to the game.
+The `roblox-game-design` skill guides the design process and fills in these templates.
+
+World building note: a new place from Studio's Baseplate template has a Baseplate whose top
+is at Y = 0. Generated floors at Y = 0 z-fight with it (flickering), so place generated floors
+slightly above it or remove the Baseplate.

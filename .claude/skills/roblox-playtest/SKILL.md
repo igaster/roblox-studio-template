@@ -19,7 +19,12 @@ Requires MCP set up and Studio open — see `roblox-studio-mcp` for precondition
 1. **State the scenario before starting** — what input sequence, what you expect
    to observe (a console line, a visible state change, an attribute value). This
    makes the pass/fail call unambiguous afterward.
-2. **Start the session**: `start_stop_play` (start).
+2. **Start the session**: `start_stop_play` (start), then silence it:
+   `require(game.ReplicatedStorage.Shared.TestHooks).muteAudio(true)` on the Server. Test runs
+   stay muted unless the scenario is about sound.
+   If the game credits only *active* players (crewing, scoring), a scenario driven by test
+   commands may leave the player inactive, so rewards silently don't pay. Give the game a
+   command that marks the player active, and use it in such runs.
 3. **Drive it**: `character_navigation` to move, `user_keyboard_input` /
    `user_mouse_input` for actions, in the sequence the scenario needs. Add small
    waits between steps if the behavior is time-dependent (animations, cooldowns,
@@ -32,26 +37,26 @@ Requires MCP set up and Studio open — see `roblox-studio-mcp` for precondition
 6. **Report pass/fail** against the expectation stated in step 1, with the
    evidence (console lines, attribute values, or screenshot) you collected.
 
+## Fast-changing state: act and observe in one call
+
+Any state that changes faster than an MCP round trip (an NPC state machine, a chase, a
+timer, a vehicle) can't be checked with "do X in one call, then read state in the next": by
+the second call several seconds may have passed (in one run the NPC caught the player between
+the two calls). Do the action **and** the sampling in a single `execute_luau` call, in a
+`task.wait()` loop, and return the samples (template below). Console lines and `TestHooks`
+events read afterwards are a good second record.
+
+`character_navigation` works for Roblox's stock Humanoid controller but can error inside
+Studio's own tool (see `roblox-studio-mcp`, *Known failures*); then teleport
+(`TestHooks.teleportNear`, `PivotTo`) and read attributes instead.
+
 ## Continuous/auto-driven gameplay (vehicles, lightcycle-style movement, anything server-remote-controlled)
 
-`character_navigation` and `user_keyboard_input` move the Roblox `Character`/`Humanoid` —
-they do **not** reliably drive gameplay entities that are controlled by firing RemoteEvents
-server-side (a vehicle that moves forward automatically and steers via heading-delta remotes,
-for example). Confirmed independently across two separate games/rounds: literal keypresses
-(including a plain forward key) produced zero observed effect on such entities, and the
-"press key, then separately check state" pattern loses its own race against real gameplay speed —
-by the time a second MCP round-trip reads state back, several real seconds may have passed and an
-unattended entity can have already crashed, respawned, or moved past the thing you meant to
-observe.
-
-**This caveat is specifically about custom movement systems, not `character_navigation` itself.**
-Confirmed on a *different* game (speed-rush) using Roblox's stock Humanoid controller (no custom
-vehicle/physics): `character_navigation` worked correctly and produced real, verifiable
-movement — `Speed`/`WalkSpeed` attributes updated live and `HumanoidRootPart.Position` genuinely
-advanced as directed. The dividing line is whether the game reinvented movement (needs the
-remote-firing technique below) or uses the default character controller (try
-`character_navigation` first — it's simpler and has less to get wrong than reconstructing a
-remote call by hand).
+**Which input tool?** `character_navigation`/`user_keyboard_input` drive the stock Roblox
+`Humanoid` controller well. They do **not** drive entities moved by the game's own
+RemoteEvents (an auto-moving vehicle steered by remotes): keypresses have no effect there.
+Rule: stock character controller → try `character_navigation` first; custom movement → use
+the technique below.
 
 **Standard technique for this case**: skip character-input tools entirely and drive the
 gameplay-facing RemoteEvents directly — the same ones the real client script fires — via a
@@ -59,7 +64,7 @@ single `execute_luau` call (Client datamodel, so you're firing as the actual pla
 action *and* the before/after state sampling inside that one call, in a tight `task.wait(0.05-0.1)`
 loop with no MCP round-trip in between samples. This eliminates the latency race and gives
 concrete position/state-over-time evidence instead of a bare assertion. Read the relevant
-`*.client.lua` first to find the exact remote names/argument shapes it uses (don't guess) —
+controller (`StarterPlayerScripts/Controllers/*.lua`) first to find the exact remote names/argument shapes it uses (don't guess) —
 in particular, check whether each remote expects a `string` or a raw number (`tostring(x)` vs
 `x`); firing the wrong type fails silently (the server-side handler's `typeof()` guard just
 drops it) and looks exactly like "nothing happened," easy to misdiagnose as a game bug.
@@ -102,6 +107,9 @@ Key pitfalls this template avoids, each hit at least once in practice:
   server-side logic that resets its input state every frame (e.g. `pendingInput = 0` after
   consuming it) will see mostly-idle frames between your fires and the effect will look far
   weaker than real gameplay — match the real firing rate, don't guess a "good enough" one.
+- **`Humanoid:MoveTo` gives up after 8 seconds** and stops short without an error. Split
+  long walks into legs (≤ 30 studs at walking speed, less when the character is slowed) and
+  wait for `MoveToFinished` on each, or teleport when the walk itself isn't under test.
 - **Not verifying the setup, only the result**: if a test doesn't behave as expected, check
   first whether you actually reproduced the intended scenario (right position, right distance
   from the target, no unrelated obstacle in the path) before concluding it's a game bug — a
@@ -128,7 +136,16 @@ local snapshot = TestHooks.dumpState()
 
 -- Structured events instead of grepping noisy console output:
 local recent = TestHooks.getEvents(os.clock() - 10) -- last 10 seconds, any category
+
+-- Act on a live service's private state (currency, timers, saves) through a
+-- Studio-only command the service registered with TestHooks.registerCommand:
+TestHooks.runCommand("setCrumbs", player, 5000)
 ```
+
+`execute_luau` gets a fresh copy of every module, so it can't reach a service's
+private tables directly. When a test needs to set state that only a service owns,
+add a `TestHooks.registerCommand` in that service's `init()` rather than a
+game-specific debug remote.
 
 If a game predates `TestHooks` or a builder hasn't adopted the tagging/
 logging conventions yet, fall back to the manual techniques:
@@ -143,8 +160,9 @@ logging conventions yet, fall back to the manual techniques:
   without the module. Avoid inferring state from visual proxies (e.g. "is the
   vehicle alive" from whether a `Head` part exists) if you can avoid it — that
   usually means the real state lives in a private Lua table you can't reach,
-  which is itself worth flagging as a gap in `REPORT.md`/`FEEDBACK_LOG.md`
-  (the fix is adopting `TestHooks`/attributes, not a cleverer inference).
+  which is itself worth a `FRAMEWORK_FEEDBACK.md` entry if the framework
+  didn't steer you to attributes (the fix is adopting `TestHooks`/attributes,
+  not a cleverer inference).
 
 ## When not to use this
 

@@ -1,0 +1,12 @@
+{
+  "name": "roblox-framework",
+  "description": "Optional plugins for this Roblox framework (off by default).",
+  "owner": { "name": "Giannis Gasteratos" },
+  "plugins": [
+    {
+      "name": "roblox-trainer",
+      "source": "./plugins/roblox-trainer",
+      "description": "Improve the framework by having games designed and built: plays the owner, drives the Lead, reviews runs, proposes framework fixes."
+    }
+  ]
+}

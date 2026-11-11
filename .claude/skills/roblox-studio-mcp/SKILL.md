@@ -18,6 +18,10 @@ must have Studio open, the project's place loaded, and the Rojo plugin connected
 before any of these tools work. The agent cannot launch Studio from a cold start.
 If MCP tool calls fail or time out, check this first before assuming a bug.
 
+**Reopening Studio changes its `studio_id`.** The old id simply stops working, with no error
+naming the cause. After any reopen or restart, call `list_roblox_studios` first, then
+`make verify` and a sync probe.
+
 ## One-time setup
 
 `roblox-initialize` runs step 2 automatically (best-effort) as part of the fresh-clone
@@ -26,58 +30,37 @@ bootstrap. Steps 1 and 3 below are manual/GUI and can't be scripted.
 1. **In Studio:** open Assistant → "… ⟩ Manage MCP Servers" → toggle
    "Enable Studio as MCP server".
 2. **Register with the MCP client** (stdio transport):
-   - Quick Connect: in Studio's MCP settings, expand Quick Connect and toggle
-     Claude Code — easiest if a human is doing this by hand.
-   - CLI (what `bootstrap.sh`/`bootstrap.bat` do): `claude mcp add Roblox_Studio --
-     /Applications/RobloxStudio.app/Contents/MacOS/StudioMCP` (macOS) or
-     `claude mcp add Roblox_Studio -- cmd.exe /c %LOCALAPPDATA%\Roblox\mcp.bat`
-     (Windows).
+   - **macOS: nothing to do.** The project's `.mcp.json` registers `Roblox_Studio`
+     at `/Applications/RobloxStudio.app/Contents/MacOS/StudioMCP`. Claude Code asks
+     to approve it once. For a non-standard install path, register a local
+     override: `claude mcp add Roblox_Studio -- <path-to>/StudioMCP`.
+   - **Windows:** `bootstrap.bat` registers it locally with
+     `claude mcp add Roblox_Studio -- cmd.exe /c %LOCALAPPDATA%\Roblox\mcp.bat`.
+     A local registration with the same name overrides the `.mcp.json` entry.
+   - **Use exactly one registration, named `Roblox_Studio`.** Don't also enable
+     Studio's Quick Connect for Claude Code: it may register a second server under
+     a different name, giving two connections to the same Studio.
    - Full reference: [create.roblox.com/docs/studio/mcp](https://create.roblox.com/docs/studio/mcp).
-3. **Verify** with a trivial call, e.g. `execute_luau` with `print("mcp ok")` in
-   Server context, then `get_console_output` and confirm the line appears.
-   **This only proves the MCP channel itself works — it does not prove Rojo's
-   file sync into the DataModel is live.** Those are two independent
-   connections that can be up or down separately. Also confirm sync
-   specifically: `search_game_tree` or `inspect_instance` for a file that's
-   **new to this project**, not just any known file — a stale/partial sync can
-   still contain files from *before* the current work (an old template
-   placeholder, a deleted-on-disk module that lingers in the DataModel), which
-   makes a check against a long-standing file pass even when recent changes
-   never synced. Confirmed directly: checking only `GameConfig` once showed a
-   plausible-looking but stale copy — old placeholder content, a since-deleted
-   `ExampleMath` still present, and an entirely new module (`GridMath`)
-   missing — that only became obvious by checking a file that couldn't
-   possibly predate this session.
-   This failure mode is easy to miss because nothing errors or times out; it
-   just silently returns an empty/stale tree. A human needs to reconnect the
-   Rojo plugin (Rojo panel → Connect → `localhost:34872`) — no MCP tool can
-   click Studio's own plugin toolbar to do this.
+3. **Verify both connections** — they're independent and fail separately:
+   - **MCP channel:** `execute_luau` with `print("mcp ok")`, then `get_console_output`.
+   - **Rojo sync:** `make verify` (Rojo serving, Studio connected), then
+     `search_game_tree`/`inspect_instance` for a file that's **new in this project's
+     recent work**. A long-standing file (e.g. `GameConfig`) can pass while the tree is
+     stale.
 
-   **A separate, unrelated failure mode that looks similar but isn't a sync
-   problem at all**: if you edit a module that's already been `require()`'d
-   earlier in the current Edit-mode session, a repeated `execute_luau` call
-   re-requiring it can still return the *old* value — this is Roblox's own
-   `require()` cache (per script session, not re-evaluated on a live `Source`
-   change), nothing to do with Rojo. Distinguish it by checking `Source`
-   directly (or `loadstring(source)()`) — if that shows the current value but
-   `require()` doesn't, it's the cache, not sync. Fix: start a fresh Play
-   session and re-check via `execute_luau` in **Server** context — confirmed
-   directly to clear it. Don't report this as a sync blocker requiring a
-   human reconnect; it isn't one.
-   **Never restart `rojo serve` as an attempted fix, for any reason —
-   including when sync is already confirmed broken.** This is not a
-   "don't do it if unsure" guideline, it's an absolute: restarting the server
-   process cannot repair a plugin-side disconnect, because the disconnect
-   lives in Studio's plugin, not the server. All a restart does is mint a new
-   session ID, which either (a) drops a working connection ("Server changed
-   id," no auto-reconnect — confirmed directly) or (b) does nothing useful if
-   sync was already dead, while making the eventual manual reconnect no
-   cheaper. Confirmed twice: once dropping a live connection, once as a
-   subagent's diagnostic attempt on an already-broken one that (predictably)
-   didn't help. If you determine sync is broken, **stop and report it as a
-   blocker** — don't try to fix it yourself by touching the server process.
-   The plugin also polls and live-reloads project-file changes on its own, so
-   there was never a legitimate reason to restart for that either.
+## Sync problems: diagnose before asking a human
+
+| Symptom | Cause | Action |
+|---|---|---|
+| Tree is old/partial **and** `make verify` shows Studio connected | Plugin holds a stale session (common after laptop sleep); Studio's console shows `[Rojo-Warn] Received message with wrong session ID; ignoring` | Re-probe once after ~30 s (a large initial sync takes time). Still stale → ask the human for **Disconnect → Connect** in the Rojo panel. |
+| Tree is old/partial, `make verify` shows no Studio connection | Plugin not connected | Ask the human to **Connect** (`localhost:34872`). |
+| Tree is **empty** (no `ServerScriptService.FrameworkSmokeTest`) while `make verify` shows Studio connected | Rojo is waiting for its first-sync confirmation in the plugin panel | Ask the human to click **Accept** in the Rojo panel. Connected isn't synced. |
+| `Source` is current but `require()` returns old behavior | Roblox's per-session `require()` cache in Edit mode, not sync | Run it in a fresh Play session (Server datamodel). Cloning the module only helps if it requires nothing else that changed. Not a blocker. |
+
+**Never restart `rojo serve` to fix sync.** A restart mints a new session ID: it drops a
+working connection ("Server changed id", no auto-reconnect) and can't repair a plugin-side
+problem. The only legitimate restart is **switching the served project** (e.g. moving to
+another game folder), which then needs a human Connect. No MCP tool can click the Rojo panel.
 
 If any of these tools aren't available in this session, tell the user setup is
 missing or disconnected rather than falling back silently — the manual fallback
@@ -85,6 +68,11 @@ paths documented in `roblox-test` still work, but should be a deliberate choice,
 not a silent one.
 
 ## Tools and when to use them
+
+- **`list_roblox_studios`**: one MCP server can be connected to several Studio
+  instances at once (e.g. a lobby place and a game place). Call this first to get
+  each instance's `studio_id` and place ID, then pass `studio_id` on every call so
+  it targets the right Studio.
 
 - **`execute_luau`** — run a Luau snippet in Edit, Server, or Client context. Prefer
   Server context for the same reason server scripts hold game logic (`CLAUDE.md`:
@@ -97,33 +85,9 @@ not a silent one.
   target instance first (see `roblox-capture`).
 - **`start_stop_play`** — start or stop a real Play session (physics, character,
   full gameplay). Use for `roblox-playtest`, not for routine logic checks.
-  **Known failure mode**: can return `"Start play hasn't finished yet"` and get
-  stuck — confirmed by reproducing it independently (not just trusting a
-  subagent's claim): retrying `start`, retrying `stop`, and re-running
-  `set_active_studio` first all returned the identical error, with nothing new
-  in `get_console_output` and `get_studio_state` still reporting `Edit` mode
-  throughout. This looks like a stuck internal flag on the MCP/plugin side, not
-  something happening inside the Roblox engine — `execute_luau` and other tools
-  kept working fine the whole time, only `start_stop_play` was affected. No
-  agent-side recovery found. If this happens: don't loop retrying more than 2-3
-  times (matches the general "stop and report" guidance for stuck tool calls) —
-  report it as a blocker and fall back to whatever verification doesn't need a
-  live Play session (Tier 1, `search_game_tree`/`inspect_instance` state checks
-  in Edit mode) until a human can check Studio's own UI directly; MCP-side
-  retries alone did not resolve it. **Recovery confirmed (speed-rush,
-  2026-08-12)**: a human manually clicking Play in Studio's own UI worked
-  immediately even while the MCP connection still reported the stuck state
-  (`get_studio_state` lagged behind reality — reported `Edit` mode while a
-  real Play session was visibly running in the screenshot the human sent, and
-  `execute_luau`/`get_console_output` against `Server`/`Client` datamodels
-  worked fine once directed at the live session). A subsequent full Studio
-  restart then also let `start_stop_play` itself work normally again via MCP.
-  So two escalating recovery options, in order: (1) ask the human to click
-  Play directly and keep using other MCP tools against the resulting session
-  even if `get_studio_state` looks stale; (2) if that's not enough, a Studio
-  restart is the next step. Root cause still unconfirmed either way.
+  See *Known failures* below.
 - **`user_mouse_input` / `user_keyboard_input` / `character_navigation`** — simulate
-  input during a Play session.
+  input during a Play session (see `roblox-playtest` for when each works).
 - **`search_game_tree` / `inspect_instance`** — read the DataModel to confirm state
   without guessing.
 - **`generate_mesh` / `generate_material` / `generate_procedural_model`** —
@@ -132,10 +96,21 @@ not a silent one.
   prototype-then-convert workflow: use these to explore a look, then hand-write a
   generator module for anything that ships.
 
+## Known failures
+
+- **`start_stop_play` stuck on "Start play hasn't finished yet"** while other tools keep
+  working; `get_studio_state` may lag behind reality. Don't retry more than 2–3 times. Recovery,
+  in order: ask the human to click Play in Studio and keep using other MCP tools against that
+  session; then a Studio restart. Meanwhile use checks that don't need Play.
+- **`character_navigation` can error inside Studio's own Assistant tool**
+  (`CharacterNavigationTool`). Fall back to teleporting (`TestHooks.teleportNear`, `PivotTo`)
+  and reading attributes.
+- **Studio briefly missing from `list_roblox_studios`** right after a call: retry once before
+  treating it as a disconnect.
+
 ## Safety conventions
 
-Same bar as any other risky action in this project (see root `CLAUDE.md` on
-confirming before destructive actions):
+Same bar as any other risky action:
 
 - Never use `execute_luau` to delete or clear existing Workspace/service content
   the user didn't ask to remove. Scratch instances created for

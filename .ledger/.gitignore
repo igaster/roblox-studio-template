@@ -1,0 +1,11 @@
+# Training records stay in the maintainer's clone; only the structure and instructions ship.
+# See README.md.
+/scorecard.md
+/runs/*
+!/runs/README.md
+/learnings/*
+!/learnings/README.md
+!/learnings/coverage.template.md
+!/learnings/harvests/
+/learnings/harvests/*
+!/learnings/harvests/README.md

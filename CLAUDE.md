@@ -6,9 +6,10 @@ Roblox game developed with Rojo for local development and live-syncing to Roblox
 ## Setup
 - Rokit manages the toolchain. Install Rokit first: https://github.com/rojo-rbx/rokit
 - Run `./bootstrap.sh` after cloning to install Rojo and the Studio plugin automatically.
-- Rojo v7.6.1 is pinned in `rokit.toml`.
+- Tool versions (Rojo, Lune) are pinned in `rokit.toml`, the single source of truth. Don't restate version numbers elsewhere.
 
-> **Claude:** On a fresh clone or first conversation in this project, prompt the user to run `/roblox-initialize` to complete the environment setup.
+> **Claude:** If the toolchain looks missing (`make verify` fails on rokit/rojo/lune), suggest
+> running `/roblox-initialize`. Don't prompt for it on an already set-up clone.
 
 ## Key Commands
 - `make serve` - Start Rojo server
@@ -23,16 +24,54 @@ src/
 │   │   ├── GameConfig.lua       # All game configuration
 │   │   ├── Classes/             # OOP entities (one file per class)
 │   │   └── Modules/             # Utilities
-│   ├── ServerScriptService/     # Server-authoritative game logic
-│   ├── StarterPlayerScripts/    # Client UI and input
+│   ├── ServerScriptService/
+│   │   ├── Main.server.lua      # The only server Script: starts Services/
+│   │   ├── Services/            # Server game logic, one ModuleScript per system
+│   │   └── SmokeTest.lua        # Tier 2 test (ModuleScript, never auto-runs)
+│   ├── StarterPlayerScripts/
+│   │   ├── Main.client.lua      # The only LocalScript: starts Controllers/
+│   │   └── Controllers/         # Client UI and input, one ModuleScript per concern
 │   └── ServerStorage/
 │       └── AssetGenerators/     # Programmatic asset creation scripts
 │           ├── GUI/
 │           ├── Models/
 │           ├── Parts/
 │           └── Tools/
-└── shared/                      # Modules synced into ReplicatedStorage.Shared
+└── shared/                      # Framework modules only (TestHooks, TestAudio, Remotes,
+                                 # ServiceLoader, ConfigTypes, Greybox) → ReplicatedStorage.Shared. Game modules go in
+                                 # ReplicatedStorage/Modules/.
 ```
+
+### Code Organization
+
+- **One entry point per side.** `Main.server.lua` and `Main.client.lua` are the only
+  scripts that run on their own. Don't add more `.server.lua`/`.client.lua` files; add a
+  service or controller instead. Startup order is then explicit and debuggable.
+- **Services** (`ServerScriptService/Services/<Name>Service.lua`) and **controllers**
+  (`StarterPlayerScripts/Controllers/<Name>Controller.lua`) are ModuleScripts with
+  optional `init()` and `start()`. `shared/ServiceLoader.lua` runs every module's
+  `init()` (synchronous setup, must not yield), then every `start()` (each in its own
+  thread). Services may `require` each other directly.
+- **Services orchestrate, classes own entities.** A service wires players and events
+  to `Classes/` instances; entity state and behavior stay in the class.
+
+### Networking
+
+- All RemoteEvents/RemoteFunctions go through `shared/Remotes.lua` and live in
+  `ReplicatedStorage.Remotes`. Never create remotes ad hoc elsewhere.
+- **The server creates remotes in a service's `init()`** (`Remotes.event("Name")`);
+  clients fetch them the same way and wait for them.
+- Name remotes after the player's intent (`RequestUpgrade`, `RequestPickUp`), not the
+  effect.
+- **The server validates every argument**: `typeof` checks, ranges, ownership,
+  cooldowns. It never trusts a client-sent value for state the server owns. A rejected
+  request returns or warns, never errors.
+- **Client-simulated characters.** The client moves its own character, so the server sees it
+  a few frames late: give state checks a short grace window, measure heights from the root
+  part (it stands ~3 studs up), and raycast rather than trust `Humanoid.FloorMaterial`.
+  Validate outcomes (distance over time, being in the zone) before paying a reward. A state
+  that benefits the player (silent, invulnerable, faster) is ended by the server, never left
+  for the client to end.
 
 ### What Rojo Syncs vs. What Studio Owns
 
@@ -42,24 +81,43 @@ src/
 
 The rule: **behavior and logic = code (git)**, **visual/3D assets = Studio**.
 
+- **Prototype (greybox) levels and lighting may be built by code**: a level generator builds the
+  level (and sets `Lighting`) at every server start (see `roblox-asset-generators`, *Level
+  generators*; `shared/Greybox.lua` has part helpers). Once real art and lighting are set up
+  in Studio, retire the generator and the place file owns them.
+- **Third-party asset ids** (Creator Store sounds, meshes, decals) live in `GameConfig`, come
+  from licensed or verified sources, and are checked to load in a Play session; see
+  `roblox-asset-generators`, *Third-party assets*.
+- **Always rebuild, never "skip if it exists".** Anything code puts in Workspace can be saved
+  into the place file; a "build only if missing" check then keeps serving that stale copy
+  after the generator is fixed. Decide this when *planning* a task, not only when building it.
+
 ### Configuration Files
 
 - **`default.project.json`**: Rojo config — maps `src/` paths to Roblox services.
-- **`rokit.toml`**: Rokit toolchain configuration (pins Rojo version).
+- **`rokit.toml`**: Rokit toolchain configuration (pins Rojo and Lune versions).
 - **`Makefile`**: Build and serve commands.
 - **`bootstrap.sh`**: One-time setup script for fresh clones.
 
 ### Asset Generation Pattern
 
-Scripts in `ServerStorage/AssetGenerators/` create game assets programmatically. Run them from Roblox Studio's command bar or Execute panel to generate assets without manual Studio work.
+Visual content (models, tools, parts, levels, UI) is built by generator modules in
+`ServerStorage/AssetGenerators/{GUI,Models,Parts,Tools}/`, never inline in game logic. The
+`roblox-asset-generators` skill has the patterns (reusable asset, level, GUI).
 
-```lua
--- Execute in Roblox command bar:
-local gen = require(game.ServerStorage.AssetGenerators.Models.CharacterModelGenerator)
-gen.createCharacter().Parent = workspace
-```
+## Skills to load
 
-Assets are organized by type (`GUI/`, `Models/`, `Parts/`, `Tools/`). When Claude generates a new asset type, it should create or update the relevant generator script — never hardcode asset structure in game logic.
+Skills hold the detailed procedures. Load the one that matches the work **before** you start
+it, including mid-build, when a plan task names it:
+
+| Work | Skill |
+|---|---|
+| A model, tool, part, level or GUI (anything under `AssetGenerators/`) | `roblox-asset-generators` |
+| Running tests, writing Tier 1/2 tests, a milestone's checks | `roblox-test` |
+| Anything through the Studio MCP (`execute_luau`, Play, console) | `roblox-studio-mcp` |
+| Verifying gameplay in a Play session | `roblox-playtest` |
+| Looking at an asset or scene | `roblox-capture` |
+| A new game, a large feature, tuning, monetization | `roblox-game-design` |
 
 ## Development Workflow
 
@@ -67,35 +125,73 @@ Assets are organized by type (`GUI/`, `Models/`, `Parts/`, `Tools/`). When Claud
 2. **Start server**: `make serve`.
 3. **Open Studio**: Open the matching place via Asset Manager → Places, then connect the Rojo plugin to `localhost:34872`.
 4. **Develop**: Edit Lua files in VS Code → changes sync to Studio automatically → test in Studio's play mode.
-5. **Commit**: Commit `src/` changes regularly.
+5. **Commit**: only when the user asks; never push unless asked.
 
 ## Key Conventions
 
 - **Model Names = Config Keys**: Entity model names in Studio must exactly match their keys in `GameConfig.lua`.
-- **Runtime State in Attributes**: Store dynamic state (Health, MoveSpeed, etc.) using Roblox attributes, not custom properties. This isn't just a style rule — it's what makes state generically inspectable from outside the script that owns it (via `GetAttribute`/`GetAttributes()`), with no per-game debug code required. Any state a tester or another system would plausibly need to read live (current phase/round, a value at risk, whether an entity is active/occupied, health) belongs in an attribute on a well-known instance (the `Player`, or the entity itself) — not buried in a private table inside a `.server.lua` script, which is invisible from outside that script entirely.
+- **Runtime State in Attributes**: Store dynamic state (Health, MoveSpeed, etc.) using Roblox attributes, not custom properties. This isn't just a style rule — it's what makes state generically inspectable from outside the script that owns it (via `GetAttribute`/`GetAttributes()`), with no per-game debug code required. Any state a tester or another system would plausibly need to read live (current phase/round, a value at risk, whether an entity is active/occupied, health) belongs in an attribute on a well-known instance (the `Player`, or the entity itself) — not buried in a private table inside a script, which is invisible from outside it. An end state clients must see (killed, collected): set it, then remove the instance a few frames later (`Debris`), or fire an event; a change made just before `Destroy()` may never replicate.
 - **Interactable entities get a `CollectionService` tag**: anything a player can walk up to and interact with (enter, pick up, activate) should be tagged (e.g. `"Interactable"`) via `CollectionService:AddTag()` when it's created. This costs one line per entity and enables generic tooling — e.g. "teleport the player next to the nearest tagged interactable" — that works across any game without game-specific glue, since it doesn't need to know what the entity actually is.
 - **Server Authority**: All game logic (combat, spawning, economy) runs server-side. Clients handle only UI and input.
-- **File Naming**: Server scripts end with `.server.lua` (→ `Script`), client scripts with `.client.lua` (→ `LocalScript`) for correct Rojo syncing — verify with `rojo sourcemap default.project.json` if unsure.
+- **File Naming**: `.server.lua` → `Script`, `.client.lua` → `LocalScript`, plain `.lua` → `ModuleScript` — verify with `rojo sourcemap default.project.json` if unsure. Only the two `Main` entry points use the script suffixes (see *Code Organization*).
 
 ## Coding Standards
 
 - **Architecture**: Follow SOLID principles. Server-side = authoritative logic. Client-side = UI/input. Shared = utilities and config.
-- **Class Design**: Represent all game entities as OOP classes in `Classes/`. No game state inside Roblox models.
-- **State Management**: Models are purely visual. Use classes to own all state and behavior.
+- **Class Design**: Represent all game entities as OOP classes in `Classes/`. Classes own
+  state and behavior; models are visual. State others need to read is mirrored into
+  attributes (see *Runtime State in Attributes*), not kept in model properties or scripts.
 - **Configuration**: All tunable values go in `GameConfig.lua`. Never hardcode game constants in logic scripts.
+  `GameConfig` holds **plain Lua values only** (numbers, strings, booleans, tables), never
+  `Vector3`/`Color3`/`UDim2`/`CFrame`/`Enum`, so it loads under Lune and Tier 1 tests can use
+  real config values. Store engine types as tables (`{ X = 1, Y = 4, Z = 1 }`,
+  `{ R = 255, G = 200, B = 0 }`, `"Neon"`) and convert at the point of use with
+  `shared/ConfigTypes.lua`. `tests/framework.lua` fails if this rule is broken.
+- **Editing files**: change files with the Edit tool (several Edit calls are fine) and create
+  them with Write. Don't splice code with Python, `sed` or heredoc scripts: an anchor that
+  matches twice, or misses on whitespace, silently edits the wrong place, and the shell guard
+  refuses many such commands. Throwaway scripts (a sweep, a probe) go in the scratchpad
+  directory, not `/tmp`.
 - **Code Quality**: Clear names, small focused functions (under 50 lines), consistent formatting, no deep nesting.
 - **DRY**: Extract common functionality into reusable modules. Avoid copy-paste.
 - **Comments**: Add comments for non-obvious logic, algorithms, or workarounds. Skip comments that just restate what the code does.
 - **Error Handling**: Use `warn()` for recoverable issues, `error()` for fatal ones. Handle edge cases to prevent crashes.
 - **Performance**: Avoid unnecessary work in frequently called code (e.g., per-frame loops, `Heartbeat`).
-- **Commits**: Meaningful messages, commit frequently, focus on `src/` changes.
+- **Commits**: only when the user asks, with meaningful messages; never push unless asked.
 
 ## Documentation
 
 - Game design docs (GDD, feature specs, lore, milestone notes) live in `docs/design/`.
+- For new game ideas, open-ended feature proposals, tuning without a target value, or
+  monetization, use the `roblox-game-design` skill before planning code.
+- **Just do it** (no design process) when the request is concrete: an explicit value ("jump
+  power 60"), a typo, a bug fix, or a small feature inside the current milestone's scope.
+  Put new numbers in `GameConfig`, run the tests, done.
 - `CLAUDE.md` is engineering conventions only; `docs/TESTING.md` is the testing
   checklist only. Game design content never goes in either — new design docs go in
   `docs/design/`, and this file is not the place to record them.
+
+## API Docs (context7)
+
+The project's `.mcp.json` registers the [context7](https://context7.com) MCP server,
+which serves current Roblox, Rojo and Luau docs on demand. **Before using a Roblox
+API you're not certain of** (a service, an event's firing conditions, replication or
+thread-safety behavior), look it up rather than relying on memory — Roblox APIs get
+deprecated and replaced, and the reference pages carry warnings that matter
+(replication, security context, thread safety).
+
+Call `query-docs` directly with these IDs — no need to `resolve-library-id` first:
+
+| Topic | context7 ID |
+|---|---|
+| Engine API reference (classes, events, properties, enums) | `/websites/create_roblox_reference_engine` |
+| Guides and tutorials (scripting patterns, data stores, Open Cloud) | `/roblox/creator-docs` |
+| Rojo (project files, sync rules) | `/websites/rojo_space_v7` |
+| Luau language server (types, sourcemaps) | `/johnnymorganz/luau-lsp` |
+
+Keep queries to one concept each (e.g. "RemoteEvent OnServerEvent rate limiting",
+not "networking"). If context7 is unavailable (offline, rate-limited), say so
+rather than guessing at API behavior.
 
 ## Testing
 
@@ -105,16 +201,17 @@ to run each tier (also invokable manually with `/roblox-test`).
 
 **Workflow rule:** run Tier 1 after every logic change; request Tier 2 when
 classes/generators change; keep Tier 3 (`docs/TESTING.md`) updated per milestone.
-Never start a new milestone without explicit user confirmation.
+Never start a new milestone without explicit user confirmation, unless the GDD's
+*Owner involvement* setting pre-approves it (see `roblox-lead`).
 
 ## Observability (TestHooks)
 
 `shared/TestHooks.lua` (synced to `ReplicatedStorage.Shared.TestHooks`) ships as part
 of this template — every game gets it for free, no per-game debug code to write.
-It exists because live-verifying gameplay (via `roblox-playtest`/the `critic` agent)
+It exists because live-verifying gameplay (via `roblox-playtest`)
 kept stalling on two things: reaching the state worth testing, and finding signal in
-console output buried under unrelated noise. `require()` it wherever you already
-`require()` `GameConfig`.
+console output buried under unrelated noise. `require()` it in server-side services and
+classes (not in pure `*Math` modules, which must stay Lune-testable).
 
 **Minimum setup — two calls, right where you already are:**
 
@@ -123,10 +220,10 @@ console output buried under unrelated noise. `require()` it wherever you already
 2. `TestHooks.log(category, message, data)` — at meaningful state transitions
    (destroyed, collected, phase changed, scored). Use it *instead of* a plain
    `warn()`/`print()` for anything a tester would plausibly care about — it still
-   prints, so nothing is lost, but it's also filterable afterward. This turns "the
-   critic infers a vehicle was destroyed because a part disappeared" into "the critic
-   reads an actual `{category="Collision", reason="hazard"}` event" — ground truth
-   instead of guesswork.
+   prints, so nothing is lost, but it's also filterable afterward. This turns "a tester
+   infers a vehicle was destroyed because a part disappeared" into "a tester reads
+   an actual `{category="Collision", reason="hazard"}` event" — ground truth instead
+   of guesswork.
 
 Everything else below works automatically once those two conventions are followed —
 no additional code needed:
@@ -135,16 +232,35 @@ no additional code needed:
 |---|---|
 | `TestHooks.tagInteractable(instance, tag?)` | Tag an entity as interactable (default tag `"Interactable"`). |
 | `TestHooks.log(category, message, data?)` | Record a structured, filterable event (also prints). |
-| `TestHooks.getEvents(sinceTime?, category?)` | Read back recorded events, filtered by time and/or category. |
+| `TestHooks.getEvents(sinceTime?, category?)` | Read back recorded events, filtered by time and/or category. Keeps the newest 1000. |
 | `TestHooks.dumpState(tags?)` | Snapshot: every `Player`'s attributes, plus every tagged instance's position + attributes. Defaults to the `"Interactable"` tag. |
 | `TestHooks.teleportNear(player, tag?)` | Move a player's character next to the nearest tagged instance — no need to know its name or position in advance. |
+| `TestHooks.registerCommand(name, fn)` / `runCommand(name, ...)` | Studio-only test commands that act on a live service's private state (set currency, force a save). Register in the service's `init()`; run from `execute_luau`. |
+| `TestHooks.waitForEvent(since, category, message?, timeout?)` | Wait for an event logged after an action (take `since = os.clock()` before acting). Use it instead of waiting for a state, which may already hold. |
+| `TestHooks.muteAudio(on?)` | Studio only: silence all game sound for a test run (smoke test, playtest, fast match); `muteAudio(false)` restores it. Players are never affected. |
 
 Server-authoritative like everything else here: call these from server-side code,
-and read results back via `execute_luau` on the **Server** datamodel — the event
-buffer lives in that VM's copy of the module, not the client's separate one.
-Full usage patterns (how the `critic` agent actually drives this) live in the
+and read results back via `execute_luau` on the **Server** datamodel. Events are stored
+in `ServerStorage.TestHooksEvents`, so any server-side `require()` copy sees them
+(including `execute_luau`'s fresh copy). Full usage patterns live in the
 `roblox-playtest` skill — read it there rather than reinventing the calling
 convention per game.
+
+## Framework friction
+
+This project is built on a template framework: `CLAUDE.md`, the skills in `.claude/`,
+`docs/design/templates/`, and the shared modules in `src/shared/`. When the framework is
+missing something you needed, is unclear, gives wrong or outdated guidance, or gets in your
+way, append one entry to `FRAMEWORK_FEEDBACK.md` at the repo root (gitignored) and carry on.
+Don't go looking for problems; log friction when you actually hit it.
+
+```markdown
+## <short title>
+- **When:** what you were doing
+- **Framework said / lacked:** the file or skill involved, and what was missing or wrong
+- **Workaround:** what you did instead
+- **Suggestion:** (optional) how the framework could fix it
+```
 
 ## Agent-driven Studio tools
 

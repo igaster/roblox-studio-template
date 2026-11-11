@@ -9,13 +9,22 @@
 # Rojo sourcemap (generated, not source)
 sourcemap.json
 
-# Sandbox: local git clones used to dogfood the framework (orchestrator/subagent
-# game-building exercises). Never part of the template itself.
-/sandbox/
+# Personal Claude Code settings (MCP approvals, enabled plugins such as roblox-trainer)
+.claude/settings.local.json
 
-# Orchestrator-only skill for the dogfooding process above — meta-tooling for
-# developing this framework, not something a real template clone should inherit.
-/.claude/skills/framework-dogfooding/
+# Per-clone working notes and state (framework friction log, trainer session state)
+/FRAMEWORK_FEEDBACK.md
+/TRAINING_STATE.json
 
-# Dogfooding-only subagent personas — same reasoning as framework-dogfooding above.
-/.claude/agents/critic.md
+# Plan-execution scratch created by the superpowers plugin
+.superpowers/
+
+# Training archive and scenarios (owner answers; the Lead is denied reading them)
+/.training/
+
+# Training records: notes from observing one game's run stay local (the ledger has its own
+# .ledger/.gitignore)
+/docs/superpowers/specs/*-run-findings.md
+
+# Python bytecode (trainer scripts)
+__pycache__/

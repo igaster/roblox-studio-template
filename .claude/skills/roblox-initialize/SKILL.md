@@ -25,9 +25,13 @@ the first conversation in the project — don't wait to be asked a second time.
    - Open Roblox Studio, open the project's place.
    - Run `make serve`, then connect the Rojo plugin toolbar to `localhost:34872`.
    - Assistant → "… ⟩ Manage MCP Servers" → toggle "Enable Studio as MCP server".
-4. **Rename placeholders:** update the project name in `default.project.json` and
-   `lobby.project.json`.
-5. **Verify:** confirm Rojo shows connected in Studio. Optionally verify MCP via
+4. **Recommended plugin:** if the `superpowers:*` skills aren't available in this session,
+   suggest `/plugin install superpowers@claude-plugins-official` (then restart Claude Code).
+   It adds the planning and plan-execution workflows the design pipeline uses when present;
+   the framework still works without it. The project's `.claude/settings.json` also enables
+   it, so Claude Code offers the install when the folder is trusted.
+5. **Rename the project:** update `"name"` in `default.project.json`.
+6. **Verify:** confirm Rojo shows connected in Studio. Optionally verify MCP via
    `roblox-studio-mcp`'s trivial `execute_luau` call.
 
 ## After setup

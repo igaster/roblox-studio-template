@@ -29,7 +29,10 @@ looking at the Studio window. Requires MCP set up and Studio open — see
    instance (compute a bounding box / use `Model:GetBoundingBox()` or the part's
    `Position`, back the camera off enough to fit it, `CFrame` it to look at the
    target). For a `ScreenGui`, no camera framing is needed — it renders directly.
-3. **Capture.** Call `screen_capture`.
+3. **Capture.** Call `screen_capture`. In a Play session it shows the player's normal view:
+   a client camera set to `Scriptable` and aimed by script is ignored. To stage a view in
+   Play, move the character (`PivotTo`) so the default camera frames it. If that can't show
+   it, prove the state by reading attributes or properties instead.
 4. **Save.** Write the image to a reviewable path — default to the caller's
    scratchpad directory, or `docs/captures/<name>.png` if the user wants it kept
    in the repo for reference (ask if unclear; don't commit binary captures without

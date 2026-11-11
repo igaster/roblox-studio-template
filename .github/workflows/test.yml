@@ -17,4 +17,51 @@ jobs:
         uses: CompeyDev/setup-rokit@v0.2.1
 
       - name: Run tests
-        run: lune run tests/suite.lua
+        run: lune run tests/run.lua
+
+  rojo-build:
+    name: Rojo project builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rokit (Rojo, Lune)
+        uses: CompeyDev/setup-rokit@v0.2.1
+
+      # Catches a broken default.project.json, a $path that no longer exists and files Rojo
+      # can't turn into instances.
+      - name: Build the place
+        run: rojo build default.project.json --output "$RUNNER_TEMP/place.rbxl"
+
+      - name: Generate the sourcemap
+        run: rojo sourcemap default.project.json --output "$RUNNER_TEMP/sourcemap.json"
+
+  trainer-tests:
+    name: Trainer plugin tests (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run tests
+        run: python -I -m unittest discover -s plugins/roblox-trainer/tests -v
+
+  lint:
+    name: Scripts and config parse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shell scripts parse
+        run: |
+          for f in $(git ls-files '*.sh'); do bash -n "$f" && echo "ok  $f"; done
+
+      - name: JSON files parse
+        run: |
+          for f in $(git ls-files '*.json'); do python3 -m json.tool "$f" > /dev/null && echo "ok  $f"; done
+
+      - name: Python scripts compile
+        run: python3 -m compileall -q plugins/roblox-trainer/scripts

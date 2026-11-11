@@ -1,56 +1,108 @@
 # Roblox Studio Template
 
-A minimal project template for Roblox games using [Rojo](https://rojo.space/) for local development with VS Code.
+A project template for building Roblox games with [Claude Code](https://claude.com/claude-code):
+source in git, live-synced into Studio with [Rojo](https://rojo.space/), and a set of
+conventions, shared modules and skills that let an agent design, build and test a game, from a
+one-line idea to a milestone at a time.
 
-## What's Included
+## What's included
 
-- Rojo 7.6.1 and Lune, pinned via Rokit
-- `src/shared/` for modules synced into both places
-- `ServerStorage/AssetGenerators/` pattern for programmatic asset creation
-- `GameConfig.lua` as a single source of truth for all game settings
-- A three-tier testing setup (headless Lune unit tests, in-engine smoke test, manual
-  playtest checklist) — see `docs/TESTING.md`
-- `docs/design/` — a dedicated, empty-by-default home for the game's own design docs
-- `CLAUDE.md` with project rules for AI-assisted development
-- `.gitignore` for Roblox artifacts
+- **Toolchain:** Rojo and Lune, pinned with Rokit (`rokit.toml`).
+- **One entry point per side:** `Main.server.lua` starts `ServerScriptService/Services/`,
+  `Main.client.lua` starts `StarterPlayerScripts/Controllers/` (two-phase `init()`/`start()`).
+- **Shared framework modules** (`src/shared/` → `ReplicatedStorage.Shared`):
+
+  | Module | Purpose |
+  |---|---|
+  | `ServiceLoader` | Discovers and starts services/controllers |
+  | `Remotes` | The single place RemoteEvents/RemoteFunctions are created and fetched |
+  | `ConfigTypes` | Converts plain-Lua `GameConfig` values to Vector3/Color3/UDim2/Enum |
+  | `Greybox` | Part helpers for prototype level generators |
+  | `TestHooks` | Structured event log, state dump, teleport, Studio-only test commands |
+  | `TestAudio` | Studio-only mute for agent test runs |
+
+- **`GameConfig.lua`:** every tunable value, plain Lua only, so it loads headlessly.
+- **Asset generators** (`ServerStorage/AssetGenerators/`): models, parts, tools, GUIs and
+  greybox levels built by code.
+- **Three test tiers:** headless Lune unit tests (`make test`, also in CI), an in-engine smoke
+  test, and a playtest checklist (`docs/TESTING.md`).
+- **Design docs:** `docs/design/templates/` for a GDD, milestones, feature specs and reference
+  teardowns; the game's own docs go next to them in `docs/design/`.
+- **Claude Code setup:** `CLAUDE.md` (conventions), skills in `.claude/skills/`, a
+  `game-developer` agent, and `.mcp.json` with the Roblox Studio MCP server and
+  [context7](https://context7.com) for current Roblox docs.
+
+## Skills
+
+| Skill | Use it for |
+|---|---|
+| `roblox-initialize` | First-time setup of a fresh clone |
+| `roblox-game-design` | A new game idea, a feature, tuning, monetization |
+| `roblox-game-teardown` | Studying an existing game named as inspiration |
+| `roblox-lead` | Designing and building whole milestones with little involvement from you |
+| `roblox-asset-generators` | Models, tools, parts, levels and GUIs built by code |
+| `roblox-test` | Running and writing tests, milestone checks |
+| `roblox-studio-mcp` | Driving Studio from the agent (run code, Play, read the console) |
+| `roblox-playtest` | Verifying gameplay in a scripted Play session |
+| `roblox-capture` | Screenshotting an asset or a scene |
 
 ## Prerequisites
 
-1. Install [Rokit](https://github.com/rojo-rbx/rokit)
-2. Have Roblox Studio installed
+1. [Rokit](https://github.com/rojo-rbx/rokit)
+2. Roblox Studio
+3. [Claude Code](https://claude.com/claude-code) (optional, but the template is built for it)
 
-## Quick Start
+## Quick start
 
 ```bash
-# 1. Use this template or clone it
-gh repo create my-game --template igaster/roblox-studio-template
+# 1. Create a repo from this template
+gh repo create my-game --template igaster/roblox-studio-template --clone
 cd my-game
 
-# 2. Bootstrap (installs Rojo + Lune + Studio plugin, runs the headless tests)
-./bootstrap.sh          # mac/linux
-bootstrap.bat           # windows
+# 2. Bootstrap: installs Rojo + Lune and the Studio plugin, runs the headless tests,
+#    registers the Studio MCP server with Claude Code
+./bootstrap.sh          # macOS/Linux
+bootstrap.bat           # Windows
 
-# 3. Rename the project
-#    Edit "name" in default.project.json
+# 3. Rename the project: "name" in default.project.json
 
-# 4. Start developing
+# 4. Start syncing
 make serve
-# Then open Roblox Studio and connect the Rojo plugin to localhost:34872
 ```
+
+Then in Studio: open your place, connect the Rojo plugin to `localhost:34872`, and turn on
+**Enable Studio as MCP server** (Assistant → Manage MCP Servers). `make verify` checks the
+setup. In Claude Code, `/roblox-initialize` walks through the same steps.
+
+Then describe the game you want, e.g. "a game like X, but ...", and the design skill takes it
+from there.
 
 ## Commands
 
 | Command | Description |
 |---|---|
-| `make serve` | Start Rojo server |
-| `make test` | Run headless Lune unit tests |
+| `make serve` | Start the Rojo server |
+| `make test` | Run the headless Lune tests |
+| `make verify` | Check the toolchain, Rojo server and Studio connection (macOS) |
+| `make sim` | Run the game's balance simulator, if it has one (`tests/balance_sim.lua`) |
 
-## Project Structure
+## Project structure
 
 ```
 src/
-├── game/          # Game place scripts
-└── shared/        # Shared modules (synced into ReplicatedStorage.Shared)
+├── game/                      # The game: GameConfig, Classes/, Modules/, Services/ (server),
+│                              # Controllers/ (client), AssetGenerators/, SmokeTest
+└── shared/                    # Framework modules → ReplicatedStorage.Shared
+tests/                         # run.lua (entry), framework.lua, game.lua, harness.lua
+docs/design/                   # Templates; the game's GDD, milestones and specs
+plugins/roblox-trainer/        # Optional, off by default: see below
 ```
 
-See `CLAUDE.md` for full conventions and architecture guidelines.
+See `CLAUDE.md` for the full conventions.
+
+## Improving the framework (optional)
+
+`plugins/roblox-trainer/` is a Claude Code plugin for the template's maintainers: it plays a
+game owner, has a game built through the framework, reviews each milestone and proposes
+framework fixes. It is off by default and not needed to make a game; see its
+[README](plugins/roblox-trainer/README.md). Its records stay local in `.ledger/`.
