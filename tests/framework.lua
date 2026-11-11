@@ -117,6 +117,32 @@ do
 	H.near("the tighter axis wins", LayoutMath.uiScale(1, 2000, 270, 960, 540), 0.5)
 end
 
+-- ---- Every source file compiles ------------------------------------------------
+-- Studio-only code (services, controllers, generators) never runs under Lune, so this is
+-- the only headless check that catches a syntax error in it before Studio does.
+H.section("Every src/ file compiles")
+do
+	local fs = require("@lune/fs")
+	local luau = require("@lune/luau")
+	local count = 0
+	local function walk(dir: string)
+		for _, name in ipairs(fs.readDir(dir)) do
+			local path = dir .. "/" .. name
+			if fs.isDir(path) then
+				walk(path)
+			elseif string.match(name, "%.luau?$") then
+				count += 1
+				local ok, err = pcall(luau.compile, fs.readFile(path))
+				if not ok then
+					H.check(path .. " compiles: " .. tostring(err), false)
+				end
+			end
+		end
+	end
+	walk("src")
+	H.check(count .. " files checked", count > 0)
+end
+
 -- ---- Balance toolkit (tests/lib/balance, roblox-game-modeling skill) -----------
 H.section("Balance toolkit")
 require("./lib/balance/BalanceLib.spec")(H)

@@ -37,5 +37,5 @@ which questions were uncovered: a Lead that asks many uncovered questions is a r
   report", not a verdict.
 - Mention training, the framework, friction logs, or that you are an agent.
 - Hint that someone else changes the tree between calls ("while you were idle"). A heads-up
-  about a change speaks as the owner did it: "I moved the game's tests to tests/game.lua."
+  about a change speaks as the owner did it: "I moved the game's tests to tests/specs/."
 - Approve something the policy reserves for the maintainer.
