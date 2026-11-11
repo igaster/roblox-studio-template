@@ -11,8 +11,8 @@
 --
 -- Usage (game code):
 --   SessionRecorder.start({ mode = "solo" })
---   SessionRecorder.record("place", { player = "Ann", tower = "Sentry", wave = 3 })
---   SessionRecorder.finish({ lastWave = 21 })
+--   SessionRecorder.record("buy", { player = "Ann", item = "Sword", round = 3 })
+--   SessionRecorder.finish({ lastRound = 21 })
 -- Usage (agent, Server datamodel):
 --   return SessionRecorder.exportJson()
 
