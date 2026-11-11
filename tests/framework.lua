@@ -99,4 +99,22 @@ do
 	H.check("error names the module", string.find(tostring(err), "Broken.init() failed", 1, true) ~= nil)
 end
 
+-- ---- LayoutMath (HUD layout rules used by Shared/LayoutCheck) ---------------
+H.section("LayoutMath")
+do
+	local LayoutMath = require("../src/shared/LayoutMath")
+	local a = { Name = "A", X = 0, Y = 0, W = 100, H = 40 }
+	local b = { Name = "B", X = 100, Y = 0, W = 50, H = 40 }
+	local c = { Name = "C", X = 90, Y = 10, W = 50, H = 40 }
+	H.check("touching edges don't overlap", not LayoutMath.overlap(a, b))
+	H.check("real overlaps are found", LayoutMath.overlap(a, c))
+	H.eq("a clean layout has no problems", #LayoutMath.problems({ a, b }, 200, 100), 0)
+	H.eq("an overlap and an off-screen element are both reported", #LayoutMath.problems({ a, c }, 120, 100), 2)
+	H.eq("allowed pairs are skipped", #LayoutMath.problems({ a, c }, 200, 100, { ["C|A"] = true }), 0)
+	H.eq("a wildcard allows any overlap", #LayoutMath.problems({ a, c }, 200, 100, { ["A|*"] = true }), 0)
+	H.near("a large window keeps the chosen scale", LayoutMath.uiScale(1.15, 1920, 1080, 960, 540), 1.15)
+	H.check("a narrow window shrinks the UI to fit", LayoutMath.uiScale(1, 665, 520, 960, 540) * 960 <= 665)
+	H.near("the tighter axis wins", LayoutMath.uiScale(1, 2000, 270, 960, 540), 0.5)
+end
+
 return nil

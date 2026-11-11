@@ -180,6 +180,52 @@ require a GUI generator. Pattern:
 - a layout check of screen rects can't see this; check it in Play with world UI behind the
   plate.
 
+## HUD layout (checked automatically)
+
+Overlaps and off-screen elements show up at window sizes and UI scales nobody tried, so
+don't check a HUD by eye at one size. Build it to these conventions and `shared/LayoutCheck`
+measures it at several window sizes, UI scales and game phases:
+
+- **One root.** The HUD is one `ScreenGui` whose content sits in a single `Root` frame with a
+  `UIScale` child. Root's direct children are the layout elements (status bar, hotbar, side
+  panels, modals); everything else nests inside one of them.
+- **Scale with a minimum logical size.** Design for a minimum logical size (e.g. 960×540).
+  The HUD controller sets `UIScale.Scale = LayoutMath.uiScale(step, w, h, minW, minH)` and
+  `Root.Size = UDim2.fromScale(1 / scale, 1 / scale)`, so the player's UI-scale step applies
+  on large windows and small windows shrink the HUD instead of overlapping it.
+- **Worst-case text.** A label whose text varies sets the attribute `LayoutSample` to its
+  longest realistic text (`"$99,999"`, `"Level 120"`). The check fills these before
+  measuring, since an empty label hides overflow.
+- **Anchors.** A floating menu that follows something in the world can be a zero-size anchor
+  frame; the check measures the union of its visible children.
+- **Styling in one place.** Take colors, fonts, radii and spacing from `GameConfig` through
+  one style module, so a later theme restyles every element without touching generators.
+
+Register the check as a Studio-only dev command in the HUD controller's `init()`, with the
+game's phases:
+
+```lua
+TestHooks.registerCommand("LayoutCheck", function()
+	return LayoutCheck.run({
+		root = hud.Root,
+		always = { "StatusBar", "Hotbar" },
+		phases = { Lobby = { "LobbyPanel" }, Playing = { "Minimap" }, Paused = { "PauseMenu" } },
+		sizes = { { 665, 520 }, { 1280, 720 }, { 1920, 1080 }, { 2560, 1440 } },
+		steps = { 0.9, 1, 1.15 }, -- UI scale choices offered to the player
+		minSize = { 960, 540 },
+		allowed = { ["PauseMenu|*"] = true }, -- modals may cover the HUD
+		canary = { "Hotbar", "StatusBar" }, -- a deliberate overlap that must be caught first
+		prepare = function(root, phase, size) end, -- show every list row, long texts
+	})
+end)
+```
+
+Run it in a Play session on the **Client** datamodel through the LocalPlayer's attributes
+(`Dev_LayoutCheck`, see `roblox-playtest`) after GUI changes. The result starts with
+`LAYOUT OK`, `LAYOUT FAILED` (one line per problem) or `LAYOUT CHECK BROKEN` (the canary
+overlap wasn't found, so the check measured nothing). The rules (`shared/LayoutMath`) are
+pure and covered by the Lune tests.
+
 ## Quick Reference
 
 | Asset need | Directory | Typical root Instance |
@@ -187,10 +233,13 @@ require a GUI generator. Pattern:
 | Static decoration, terrain prop | `Models/` | `Model` |
 | Equippable item | `Tools/` | `Tool` |
 | Single part / projectile | `Parts/` | `Part` |
-| UI element | `GUI/` | `ScreenGui` / `Frame` |
+| UI element | `GUI/` | `ScreenGui` / `Frame` (HUD: one `Root` + `UIScale`, see *HUD layout*) |
 
 ## Common Mistakes
 
+- **Two `UICorner`s on one GUI object** (a style helper adds one, then the caller adds
+  another to make it round): only one applies and the shape silently stays wrong. Change
+  the existing `UICorner` instead.
 - **Building the asset inline in a service script** instead of a generator —
   makes the asset non-regenerable and couples visuals to gameplay logic.
 - **Parenting inside `create<Name>()`** — forces every caller into the same

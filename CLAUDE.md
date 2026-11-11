@@ -39,7 +39,8 @@ src/
 │           └── Tools/
 └── shared/                      # Framework modules only (TestHooks, TestAudio, Remotes,
                                  # ServiceLoader, ConfigTypes, Greybox, SessionRecorder,
-                                 # ServerBridge) → ReplicatedStorage.Shared.
+                                 # ServerBridge, LayoutCheck, LayoutMath)
+                                 # → ReplicatedStorage.Shared.
                                  # Game modules go in ReplicatedStorage/Modules/.
 ```
 

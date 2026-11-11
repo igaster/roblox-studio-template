@@ -72,6 +72,10 @@ call succeeding.
 Request/run this after changes to classes or asset generators, and extend the
 script as new systems land.
 
+**HUD layout isn't covered here:** a server can't measure GUI. For a game with a generated
+HUD, run the client-side `LayoutCheck` dev command after GUI changes (see
+`roblox-asset-generators`, *HUD layout*).
+
 **Writing checks that don't race:**
 - Start the run with `TestHooks.muteAudio(true)`, so test runs are silent.
 - After an action, wait for the action's own event:
