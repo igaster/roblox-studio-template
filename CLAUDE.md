@@ -38,8 +38,9 @@ src/
 │           ├── Parts/
 │           └── Tools/
 └── shared/                      # Framework modules only (TestHooks, TestAudio, Remotes,
-                                 # ServiceLoader, ConfigTypes, Greybox) → ReplicatedStorage.Shared. Game modules go in
-                                 # ReplicatedStorage/Modules/.
+                                 # ServiceLoader, ConfigTypes, Greybox, SessionRecorder,
+                                 # ServerBridge) → ReplicatedStorage.Shared.
+                                 # Game modules go in ReplicatedStorage/Modules/.
 ```
 
 ### Code Organization
@@ -226,6 +227,10 @@ Studio-only command in that service's `init()` (`TestHooks.registerCommand`) ins
 debug remote. Call these from server-side code, and read results back via `execute_luau`
 on the **Server** datamodel. The full API and calling patterns, including the attribute
 route that works when MCP code is sandboxed, are in the `roblox-playtest` skill.
+
+`shared/SessionRecorder.lua` complements it for play sessions: it records the players'
+decisions and per-round milestones so a session can be analysed afterwards (see
+`roblox-playtest`, *Recording sessions*).
 
 ## Framework friction
 

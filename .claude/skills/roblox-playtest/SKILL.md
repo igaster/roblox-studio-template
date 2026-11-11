@@ -197,6 +197,30 @@ logging conventions yet, fall back to the manual techniques:
   didn't steer you to attributes (the fix is adopting `TestHooks`/attributes,
   not a cleverer inference).
 
+## Recording sessions (SessionRecorder)
+
+`ReplicatedStorage.Shared.SessionRecorder` records play sessions for later analysis: the
+players' decisions and a few milestones (e.g. a summary per round), not logs. The game calls
+`start(meta)` / `record(kind, data)` / `finish(summary)`; the newest 20 finished sessions stay
+in server memory. **Stopping Play loses them**, so export before that:
+
+- While the user plays and you monitor, poll the game's phase attribute. When the run ends
+  (or the user says they're done), export at once via `execute_luau` on the **Server**
+  datamodel:
+  ```lua
+  return require(game.ReplicatedStorage.Shared.SessionRecorder).exportJson(true) -- true: include the unfinished one
+  ```
+- Save the returned JSON in the repo where the game keeps recordings (e.g.
+  `playtests/sessions/`), and stamp it with the config it was played under, so a later
+  comparison doesn't mix configs.
+- Record only plain data (no Instances), so it survives JSON and the bridge between module
+  copies.
+- Recordings show what happened, not why: ask the player before acting on one.
+
+It shares its state across `require` copies through `Shared.ServerBridge` (a
+BindableFunction), so this export fails when `execute_luau` is sandboxed. Then register
+a dev command in the game that returns `exportJson(true)` and call it over attributes.
+
 ## When not to use this
 
 - Pure logic changes (math, formulas, config) → Tier 1 (`roblox-test`), no Studio

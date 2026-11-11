@@ -161,6 +161,35 @@ function FrameworkSmokeTest.run(): boolean
 		cmd:Destroy()
 	end
 
+	-- SessionRecorder: a session recorded through one copy is read by another (through
+	-- ServerBridge, as execute_luau's copy sees the game's). A bridge left by an earlier
+	-- copy (e.g. the running game's) owns the state; this test only adds one session.
+	local function freshRecorder()
+		local recHolder = Instance.new("Folder")
+		recHolder.Name = "FrameworkSmokeRecorder"
+		recHolder.Parent = ServerStorage
+		ReplicatedStorage.Shared.ServerBridge:Clone().Parent = recHolder
+		local copy = ReplicatedStorage.Shared.SessionRecorder:Clone()
+		copy.Parent = recHolder
+		return require(copy), recHolder
+	end
+	local bridgeExisted = ServerStorage:FindFirstChild("SessionRecorderBridge") ~= nil
+	local recA, recHolderA = freshRecorder()
+	local recB, recHolderB = freshRecorder()
+	local id = recA.start({ smoke = true })
+	recA.record("buy", { item = "Sword" })
+	recA.finish({ lastRound = 3 })
+	local sessions = recB.sessions(false)
+	local last = sessions[#sessions]
+	check("sessions: another copy sees the finished session", last ~= nil and last.id == id and #last.events == 1)
+	check("sessions: exportJson is JSON", string.sub(recB.exportJson(false), 1, 1) == "[")
+	recHolderA:Destroy()
+	recHolderB:Destroy()
+	local bridge = ServerStorage:FindFirstChild("SessionRecorderBridge")
+	if bridge and not bridgeExisted then
+		bridge:Destroy()
+	end
+
 	-- Greybox helper.
 	local Greybox = require(ReplicatedStorage.Shared.Greybox)
 	local folder = Greybox.folder("FrameworkSmokeGreybox", ServerStorage)
