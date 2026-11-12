@@ -128,5 +128,6 @@ re-derive it.
 ## Workflow rule
 
 Run Tier 1 after every logic change. Request Tier 2 when classes or generators
-change. Keep Tier 3 updated per milestone. Never start a new milestone (unless the GDD's *Owner involvement* pre-approves it) without
+change, batched: once per checkpoint or before a report, not after each edit (`CLAUDE.md`,
+*Working economically*). Keep Tier 3 updated per milestone. Never start a new milestone (unless the GDD's *Owner involvement* pre-approves it) without
 explicit user confirmation.

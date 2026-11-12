@@ -264,7 +264,7 @@ manual playtest checklist. See the `roblox-test` skill for the full pipeline and
 to run each tier (also invokable manually with `/roblox-test`).
 
 **Workflow rule:** run Tier 1 after every logic change; request Tier 2 when
-classes/generators change; keep Tier 3 (`docs/TESTING.md`) updated per milestone.
+classes/generators change, batched once per checkpoint or before a report (not after each edit); keep Tier 3 (`docs/TESTING.md`) updated per milestone.
 Every acceptance criterion and design target maps to at least one check, named by its ID
 (`DT1`, `M1-AC2`). Never start a new milestone without explicit user confirmation, unless the GDD's
 *Owner involvement* setting pre-approves it (see `roblox-lead`).
