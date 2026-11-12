@@ -18,6 +18,10 @@ Scripts live in `${CLAUDE_PLUGIN_ROOT}/scripts/` (when run from the repo:
 (e.g. `python3 -I plugins/roblox-trainer/scripts/lead.py say <file>`); the `.sh` ones with
 `bash`.
 
+Edits to the plugin's own files (`plugins/roblox-trainer/**`) get no auto-mode verdict, and
+allow rules don't help. Ask the maintainer for manual mode once and batch those edits. Writes
+to `.ledger/` and `.training/` work in auto mode.
+
 ## 1. Set up the session
 
 1. **Scenario:** get the brief and owner policy from the maintainer (their message, or a file
