@@ -96,9 +96,15 @@ Scripts live in `${CLAUDE_PLUGIN_ROOT}/scripts/` (when run from the repo:
    isn't there** (no answer, or they said they're away), don't wait: sort the fixes by
    `framework-harvest`'s risk tiers, apply the low-risk ones, queue the risky ones in
    `pending-decisions.md`, and go on to step 7.
-7. If the run continues: `lead.py say` the owner's go-ahead for the next milestone (per the
-   scenario policy), together with any queued maintainer requests. Fixes now in the tree are
-   what the next milestone tests.
+7. If the run continues: `lead.py fresh <file>` with the owner's go-ahead for the next
+   milestone (per the scenario policy), together with any queued maintainer requests. Fixes
+   now in the tree are what the next milestone tests. `fresh` starts a new Lead conversation
+   that continues from the repo (`docs/STATUS.md`), as the Lead's own milestone-end report
+   suggests: every step re-sends a conversation's whole history, so one kept across
+   milestones burns usage limits. A milestone with several checkpoints can go fresh at a
+   checkpoint too. Use `say`, never `fresh`, to answer a question the Lead just asked. The
+   fresh Lead runs the handoff check (`STATUS.md` against the code). A wrong or missing
+   orientation in its first reply is a finding about the handoff docs.
 
 To change which game is in the tree, use `game-switch`.
 

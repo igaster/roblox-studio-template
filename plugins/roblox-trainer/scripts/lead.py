@@ -5,7 +5,14 @@
   lead.py say <message-file>     send an owner message to the Lead (resumes its session)
   lead.py stop                   stop a Lead call that is running (e.g. before a laptop sleeps)
   lead.py resume                 after a stop: tell the Lead to check where it left off, carry on
+  lead.py fresh [message-file]   retire the Lead's conversation and start a new one, told to
+                                 continue from the repo (docs/STATUS.md), plus the message
   lead.py running                exit 0 and print the pids if a Lead call is running
+
+Why `fresh`: every step of a conversation re-sends its whole history, so one kept across
+milestones gets dearer per step and burns usage limits (run 002 M4k: 207 steps at 317k-505k
+tokens used a 5-hour window in 21 minutes). Use it at a milestone's end, never to answer a
+question the Lead just asked. The retired session ids stay in TRAINING_STATE.json.
 
 Prints the Lead's reply. Uses permissions/lead-profile.json and the project's .mcp.json. The
 Lead gets no training instructions: it only sees the brief and messages, like any owner's.
@@ -21,6 +28,8 @@ PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROFILE = os.path.join(PLUGIN, "permissions", "lead-profile.json")
 RESUME_TEXT = ("Sorry, I had to stop you partway through. Check where you left off (the tree, "
                "tests and Studio sync) and carry on from there.\n")
+FRESH_TEXT = ("We're continuing the game in this repo. You're picking it up from a new chat, so "
+              "the repo is all you have: start from docs/STATUS.md.\n")
 
 
 def die(msg, code=1):
@@ -51,6 +60,17 @@ class Session:
         state = self.state()
         state["leadSessionId"] = sid
         json.dump(state, open(self.state_path, "w"), indent=2)
+
+    def retire_session_id(self):
+        """Records the current Lead conversation as retired. leadSessionId stays until the new
+        call returns its id, so a failed fresh start (a usage limit) leaves say/resume working."""
+        state = self.state()
+        sid = state.get("leadSessionId")
+        if sid and sid not in [r["id"] for r in state.get("retiredLeadSessions", [])]:
+            state.setdefault("retiredLeadSessions", []).append(
+                {"id": sid, "retired": now().isoformat(timespec="seconds")})
+            json.dump(state, open(self.state_path, "w"), indent=2)
+        return sid
 
     # ---- running mark -------------------------------------------------------
     def running(self):
@@ -227,6 +247,15 @@ def main(argv):
         text = read_arg(argv, "start <brief-file>")
         session.state()
         return call(session, "start", text)
+    if cmd == "fresh":
+        extra = read_arg(argv, "fresh [message-file]") if len(argv) > 2 else ""
+        busy = session.running()
+        if busy:
+            die(f"a Lead call is already running (pid {busy[0]}); wait, or lead.py stop")
+        old = session.retire_session_id()
+        print(f"Retired Lead conversation {old}; starting a fresh one." if old
+              else "No Lead conversation yet; starting one.")
+        return call(session, "fresh", FRESH_TEXT + ("\n" + extra if extra else ""))
     sid = session.state().get("leadSessionId")
     if cmd == "say":
         text = read_arg(argv, "say <message-file>")
@@ -237,7 +266,8 @@ def main(argv):
         if not sid:
             die("no Lead session yet; use lead.py start")
         return call(session, "say", RESUME_TEXT, resume=sid)
-    die("usage: lead.py start <brief-file> | say <message-file> | stop | resume | running")
+    die("usage: lead.py start <brief-file> | say <message-file> | fresh [message-file] | stop | "
+        "resume | running")
 
 
 if __name__ == "__main__":

@@ -71,7 +71,8 @@ Scripts (Python ones run with `python3 -I`):
 - `scripts/status.py`: one screen: the game in the tree, the session, whether the Lead is
   running and what it's doing now, archived games, uncommitted framework changes, open
   human checks, whether a harvest is due, harvest-ready cards.
-- `scripts/lead.py`: `start`, `say`, `stop`, `resume`, `running`. Logs every owner message
+- `scripts/lead.py`: `start`, `say`, `fresh` (a new Lead conversation at a milestone's end,
+  continuing from the repo), `stop`, `resume`, `running`. Logs every owner message
   to `.training/messages/` and streams the Lead's events to `.training/live/`.
 - `scripts/game.py`: `park`, `load`, `switch` and `list` games in `.training/archive/`.
 - `scripts/human_checks.py`: every check still waiting for a human, from the milestone files

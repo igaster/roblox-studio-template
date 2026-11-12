@@ -161,6 +161,24 @@ class LeadTest(TempCase):
         self.assertEqual(state(self.r)["leadSessionId"], "stub-123")
         self.assertEqual(self.lead("say", self.message("next"), claude=result).returncode, 0)
 
+    def test_fresh_retires_the_conversation_and_starts_from_the_repo(self):
+        first = stub(self.tmp, 'cat >/dev/null\necho \'{"type":"result","session_id":"old-1","result":"ok"}\'\n')
+        self.lead("start", self.message("brief"), claude=first)
+        cap, args = os.path.join(self.tmp, "cap.txt"), os.path.join(self.tmp, "args.txt")
+        limited = stub(self.tmp, f'cat > {cap}\necho "$@" > {args}\necho \'{{"type":"result","result":"limit"}}\'\n')
+        self.lead("fresh", claude=limited)
+        self.assertEqual(state(self.r)["leadSessionId"], "old-1", "no new id: the old one still works")
+        fresh = stub(self.tmp, f'cat > {cap}\necho "$@" > {args}\n'
+                               'echo \'{"type":"result","session_id":"new-2","result":"ok"}\'\n')
+        out = self.lead("fresh", self.message("go to CP24"), claude=fresh)
+        self.assertEqual(out.returncode, 0)
+        self.assertNotIn("--resume", slurp(args), "a fresh call starts a new conversation")
+        self.assertIn("docs/STATUS.md", slurp(cap))
+        self.assertIn("go to CP24", slurp(cap))
+        s = state(self.r)
+        self.assertEqual(s["leadSessionId"], "new-2")
+        self.assertEqual([r["id"] for r in s["retiredLeadSessions"]], ["old-1"], "retired once")
+
     def test_leading_dash_goes_via_stdin(self):
         cap = os.path.join(self.tmp, "cap.txt")
         claude = stub(self.tmp, f'cat > {cap}\nfor a in "$@"; do [ "$a" = "- leading dash" ] && exit 9; done\n'
