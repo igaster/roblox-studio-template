@@ -10,10 +10,12 @@
   lead.py running                exit 0 and print the pids if a Lead call is running
   lead.py pause-hook             (internal) the Lead's PostToolUse hook for the budget guard
 
-Budget guard: the event stream reports the account's 5-hour window (`rate_limit_event`,
-`five_hour.utilization`). At LEAD_PAUSE_AT (default 0.90) lead.py writes
-.training/pause-requested, and the Lead's PostToolUse hook then tells it to stop at a safe point
-and report; the remaining budget covers that. The flag is cleared when the next call starts.
+Budget guard: the event stream reports the account's usage windows (`rate_limit_event`,
+`five_hour.utilization` and `seven_day.utilization`). When the 5-hour window reaches
+LEAD_PAUSE_AT (default 0.90) or the weekly one LEAD_WEEKLY_PAUSE_AT (default 0.90), lead.py
+writes .training/pause-requested, and the Lead's PostToolUse hook then tells it to stop at a safe
+point and report; the remaining budget covers that. The flag is cleared when the next call
+starts, and set again at the call's first reading if the window is still over its threshold.
 
 Why `fresh`: every step of a conversation re-sends its whole history, so one kept across
 milestones gets dearer per step and burns usage limits (run 002 M4k: 207 steps at 317k-505k
@@ -42,18 +44,22 @@ PAUSE_TEXT = ("The owner's usage budget for this session is nearly used up, so p
               "short report. Don't start anything new.")
 
 
-def pause_at():
+# (window in rate_limit_event, label, threshold env var)
+WINDOWS = (("five_hour", "5-hour", "LEAD_PAUSE_AT"), ("seven_day", "weekly", "LEAD_WEEKLY_PAUSE_AT"))
+
+
+def pause_at(env="LEAD_PAUSE_AT"):
     try:
-        return float(os.environ.get("LEAD_PAUSE_AT", "0.90"))
+        return float(os.environ.get(env, "0.90"))
     except ValueError:
         return 0.90
 
 
-def five_hour_utilization(ev):
-    """The 5-hour window's utilization (0-1) from a rate_limit_event, else None."""
+def window_utilization(ev, window):
+    """A usage window's utilization (0-1) from a rate_limit_event, else None."""
     if ev.get("type") != "rate_limit_event":
         return None
-    w = ((ev.get("rate_limit_info") or {}).get("unifiedWindows") or {}).get("five_hour") or {}
+    w = ((ev.get("rate_limit_info") or {}).get("unifiedWindows") or {}).get(window) or {}
     u = w.get("utilization")
     return float(u) if isinstance(u, (int, float)) else None
 
@@ -229,7 +235,7 @@ def call(session, kind, text, resume=None):
         prompt = session.log_message(kind, text)
         extra = ["--resume", resume] if resume else []
         turns = Turns()
-        budget = None
+        budget = {}  # window label -> latest utilization
         with open(prompt) as stdin, open(session.live_path(), "a", buffering=1) as live:
             proc = subprocess.Popen(claude_args(extra), cwd=session.root, stdin=stdin,
                                     stdout=subprocess.PIPE, text=True, start_new_session=True)
@@ -241,19 +247,21 @@ def call(session, kind, text, resume=None):
                     continue
                 live.write(json.dumps({"ts": now().isoformat(timespec="seconds"), "event": ev}) + "\n")
                 turns.feed(ev)
-                u = five_hour_utilization(ev)
-                if u is not None:
-                    budget = u
-                    if u >= pause_at() and not os.path.exists(session.pause_path):
-                        open(session.pause_path, "w").write(f"{u:.2f}\n")
+                for window, label, env in WINDOWS:
+                    u = window_utilization(ev, window)
+                    if u is None:
+                        continue
+                    budget[label] = u
+                    if u >= pause_at(env) and not os.path.exists(session.pause_path):
+                        open(session.pause_path, "w").write(f"{label} {u:.2f}\n")
             code = proc.wait()
         if turns.result.get("session_id"):
             session.save_session_id(turns.result["session_id"])
         print(turns.report())
-        if budget is not None:
-            paused = os.path.exists(session.pause_path)
-            print(f"\n[budget] 5-hour window at {budget:.0%}"
-                  + (f"; the Lead was asked to pause (threshold {pause_at():.0%})" if paused else ""))
+        if budget:
+            reason = open(session.pause_path).read().strip() if os.path.exists(session.pause_path) else ""
+            print("\n[budget] " + ", ".join(f"{label} window at {u:.0%}" for label, u in budget.items())
+                  + (f"; the Lead was asked to pause ({reason})" if reason else ""))
         return code
     finally:
         session.unmark()

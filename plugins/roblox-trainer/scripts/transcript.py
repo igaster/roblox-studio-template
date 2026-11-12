@@ -3,10 +3,16 @@
 
   transcript.py digest  [--since ISO] [jsonl]     one line per tool call, skill load, error, Lead text
                                                   (--since 2026-11-08T06:00: only from then on)
-  transcript.py metrics [jsonl]                   per-turn and total numbers for the run record
+  transcript.py metrics [--since ISO] [jsonl]     per-turn and total numbers for the run record
 
-With no jsonl, uses `leadSessionId` from TRAINING_STATE.json and finds the file under
-$CLAUDE_CONFIG_DIR/projects or ~/.claude*/projects. Run with `python3 -I`.
+With no jsonl, reads every Lead conversation of the session, oldest first: the session ids in
+the live log (.training/live/<game>.jsonl), the retired ones and `leadSessionId` from
+TRAINING_STATE.json. `lead.py fresh` splits a milestone across many conversations, and an
+account switch puts them in different config dirs, so each is looked up under
+$CLAUDE_CONFIG_DIR/projects or every ~/.claude*/projects. Each conversation's subagents
+(`<session>/subagents/*.jsonl`) are merged in by time as SUB-* events: their denials and
+errors count in the metrics, their tool calls don't. Use --since for one milestone.
+Run with `python3 -I`.
 """
 import glob, json, os, re, subprocess, sys
 from datetime import datetime
@@ -15,21 +21,55 @@ from datetime import datetime
 # in run 002 M4a; they were miscounted as errors before).
 DENIAL = re.compile(r"requires approval|requires permission|needs approval|was denied|obfuscation|"
                     r"Parser aborted|Parser skipped|denied by your permission settings|"
-                    r"can't be checked before it runs", re.I)
+                    r"can't be checked before it runs|^Brace expansion", re.I)
 LIMIT = re.compile(r"hit your .{0,20}limit", re.I)
 
 
-def find_transcript():
+def session_ids(root, state):
+    """Every Lead conversation of the session, in the order it first appears."""
+    ids = []
+    live = os.path.join(root, ".training", "live", f"{state.get('game') or 'unknown'}.jsonl")
+    if os.path.exists(live):
+        for e in entries(live):
+            sid = (e.get("event") or {}).get("session_id")
+            if sid and sid not in ids:
+                ids.append(sid)
+    for sid in [r.get("id") for r in state.get("retiredLeadSessions", [])] + [state.get("leadSessionId")]:
+        if sid and sid not in ids:
+            ids.append(sid)
+    return ids
+
+
+def find_transcripts():
+    """[(path, is_subagent)] for every Lead conversation and its subagents."""
     root = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True).stdout.strip()
     state = json.load(open(os.path.join(root, "TRAINING_STATE.json")))
-    sid = state.get("leadSessionId") or sys.exit("transcript.py: no leadSessionId in TRAINING_STATE.json")
+    ids = session_ids(root, state) or sys.exit("transcript.py: no Lead session in TRAINING_STATE.json")
     project = root.replace("/", "-")
     bases = [os.environ["CLAUDE_CONFIG_DIR"]] if os.environ.get("CLAUDE_CONFIG_DIR") else glob.glob(os.path.expanduser("~/.claude*"))
-    for base in bases:
-        path = os.path.join(base, "projects", project, sid + ".jsonl")
-        if os.path.exists(path):
-            return path
-    sys.exit(f"transcript.py: {sid}.jsonl not found under {bases}")
+    files = []
+    for sid in ids:
+        found = [p for p in (os.path.join(b, "projects", project, sid + ".jsonl") for b in bases)
+                 if os.path.exists(p)]
+        if not found:
+            print(f"transcript.py: {sid}.jsonl not found under {bases}; skipped", file=sys.stderr)
+            continue
+        files.append((found[0], False))
+        subs = glob.glob(os.path.join(found[0][:-len(".jsonl")], "subagents", "*.jsonl"))
+        files += [(p, True) for p in sorted(subs)]
+    return files or sys.exit("transcript.py: no Lead transcript found")
+
+
+def all_events(files):
+    """events() of every file, merged by time (stable: same-time events keep file order)."""
+    merged = []
+    for path, sub in files:
+        last = ""
+        for ts, kind, detail in events(path, sub):
+            last = ts or last
+            merged.append((last, kind, detail))
+    merged.sort(key=lambda ev: ev[0])
+    return merged
 
 
 def entries(path):
@@ -46,8 +86,18 @@ def text_of(body):
     return str(body or "")
 
 
-def events(path):
-    """Yields (time, kind, detail): prompt, tool, skill, agent, error, denial, text, limit."""
+def events(path, sub=False):
+    """Yields (time, kind, detail): prompt, tool, skill, agent, error, denial, text, limit.
+    For a subagent's file (sub): only its calls, errors and denials, as sub-<kind>."""
+    for ts, kind, detail in lead_events(path):
+        if not sub:
+            yield ts, kind, detail
+        elif kind not in ("prompt", "text", "limit"):
+            yield ts, "sub-" + kind, detail
+
+
+def lead_events(path):
+    seen = set()  # a subagent's file repeats each tool call and result; keep the first
     for e in entries(path):
         ts, content = e.get("timestamp") or "", (e.get("message") or {}).get("content")
         if e.get("type") == "user" and isinstance(content, str):
@@ -59,6 +109,11 @@ def events(path):
             if not isinstance(c, dict):
                 continue
             kind = c.get("type")
+            key = c.get("id") or c.get("tool_use_id")
+            if kind in ("tool_use", "tool_result") and key:
+                if (kind, key) in seen:
+                    continue
+                seen.add((kind, key))
             if e.get("type") == "assistant" and kind == "tool_use":
                 name, inp = c["name"], c.get("input", {})
                 if name == "Skill":
@@ -88,8 +143,8 @@ def short(s, n):
     return s.replace("\n", " ")[:n]
 
 
-def digest(path, since=None):
-    for ts, kind, detail in events(path):
+def digest(files, since=None):
+    for ts, kind, detail in all_events(files):
         if since and ts < since:
             continue
         width = 200 if kind in ("text", "prompt") else 150
@@ -100,9 +155,13 @@ def parse(ts):
     return datetime.fromisoformat(ts.replace("Z", "+00:00"))
 
 
-def metrics(path):
+def metrics(files, since=None):
     turns, cur = [], None
-    for ts, kind, detail in events(path):
+    for ts, kind, detail in all_events(files):
+        if since and ts < since:
+            continue
+        if kind.startswith("sub-"):
+            kind = kind[4:] if kind in ("sub-denial", "sub-error") else "sub-tool"
         if kind == "prompt":
             cur = {"start": ts, "end": ts, "prompt": short(detail, 50), "tools": 0, "denials": 0,
                    "errors": 0, "skills": [], "agents": 0, "studio": 0, "limit": False}
@@ -144,8 +203,8 @@ def main(argv):
     since = None
     if rest[:1] == ["--since"]:
         since, rest = rest[1], rest[2:]
-    path = rest[0] if rest else find_transcript()
-    digest(path, since) if cmd == "digest" else metrics(path)
+    files = [(rest[0], False)] if rest else find_transcripts()
+    digest(files, since) if cmd == "digest" else metrics(files, since)
 
 
 if __name__ == "__main__":

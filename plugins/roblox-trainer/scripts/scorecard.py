@@ -47,10 +47,13 @@ IDLE_GAP_MIN = 30
 
 def lead_numbers(since, until=None):
     tr = load("transcript")
-    path = tr.find_transcript()
     minutes, tools, denials, errors, prompts = 0.0, 0, 0, 0, 0
     start = end = None
-    for ts, kind, detail in tr.events(path):
+    # Every Lead conversation of the milestone (fresh per checkpoint splits it) and their
+    # subagents, whose denials and errors count; their tool calls don't.
+    for ts, kind, detail in tr.all_events(tr.find_transcripts()):
+        if kind.startswith("sub-"):
+            kind = kind[4:] if kind in ("sub-denial", "sub-error") else "sub-tool"
         if not ts or ts < since or (until and ts > until):
             continue
         if kind == "prompt":

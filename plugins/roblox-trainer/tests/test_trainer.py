@@ -198,6 +198,20 @@ class LeadTest(TempCase):
         self.lead("say", self.message("after reset"), claude=at(0.1))
         self.assertFalse(os.path.exists(flag), "a new call clears the request")
 
+    def test_budget_guard_watches_the_weekly_window(self):
+        ev = {"type": "rate_limit_event", "rate_limit_info": {"unifiedWindows": {
+            "five_hour": {"utilization": 0.2}, "seven_day": {"utilization": 0.76}}}}
+        claude = stub(self.tmp, f"cat >/dev/null\necho '{json.dumps(ev)}'\n"
+                                "echo '{\"type\":\"result\",\"session_id\":\"s\",\"result\":\"ok\"}'\n")
+        flag = os.path.join(self.r, ".training", "pause-requested")
+        out = self.lead("start", self.message("go"), claude=claude).stdout
+        self.assertIn("5-hour window at 20%, weekly window at 76%", out)
+        self.assertFalse(os.path.exists(flag), "default weekly threshold 90%")
+        out = run(py("lead.py") + ["say", self.message("more")], self.r,
+                  env={"CLAUDE_BIN": claude, "LEAD_WEEKLY_PAUSE_AT": "0.75"}).stdout
+        self.assertTrue(os.path.exists(flag))
+        self.assertIn("asked to pause (weekly 0.76)", out)
+
     def test_leading_dash_goes_via_stdin(self):
         cap = os.path.join(self.tmp, "cap.txt")
         claude = stub(self.tmp, f'cat > {cap}\nfor a in "$@"; do [ "$a" = "- leading dash" ] && exit 9; done\n'
@@ -396,6 +410,46 @@ class TranscriptBudgetTest(TempCase):
         turn2 = [l for l in metrics.split("\n") if l.startswith("| 2 ")][0]
         self.assertIn("| 2 | 11:00 | 5 |", turn2)
         self.assertIn("USAGE LIMIT", turn2)
+
+    def test_all_conversations_and_subagents(self):
+        repo = make_repo(self.tmp, {"CLAUDE.md": "# framework\n"})
+        root = git(repo, "rev-parse", "--show-toplevel")
+        write(root, "TRAINING_STATE.json", json.dumps({
+            "game": "g", "leadSessionId": "s3", "retiredLeadSessions": [{"id": "s2"}]}))
+        write(os.path.join(root, ".training", "live"), "g.jsonl",
+              '{"ts": "x", "event": {"session_id": "s1"}}\n{"ts": "x", "event": {"session_id": "s2"}}\n')
+        config = os.path.join(self.tmp, "config")
+        project = os.path.join(config, "projects", root.replace("/", "-"))
+
+        def line(ts, kind, content):
+            return json.dumps({"type": kind, "timestamp": ts, "message": {"content": content}}) + "\n"
+        tool = lambda i, cmd: [{"type": "tool_use", "id": i, "name": "Bash", "input": {"command": cmd}}]
+        denied = lambda i: [{"type": "tool_result", "tool_use_id": i, "is_error": True,
+                             "content": "Brace expansion: requires approval"}]
+        write(project, "s1.jsonl", line("2026-01-01T09:00:00Z", "user", "old milestone")
+              + line("2026-01-01T09:01:00Z", "assistant", tool("a", "echo s1")))
+        write(project, "s3.jsonl", line("2026-01-01T11:00:00Z", "user", "task 13")
+              + line("2026-01-01T11:01:00Z", "assistant", tool("b", "echo s3"))
+              + line("2026-01-01T11:09:00Z", "assistant", tool("c", "echo done")))
+        # s2 is missing (another config dir, deleted): skipped with a warning.
+        sub = line("2026-01-01T11:02:00Z", "user", "review the code") \
+            + line("2026-01-01T11:03:00Z", "assistant", tool("r1", "wc -l {a,b}.lua")) \
+            + line("2026-01-01T11:03:01Z", "user", denied("r1"))
+        write(os.path.join(project, "s3", "subagents"), "agent-x.jsonl", sub + sub)  # records repeat
+        env = {"CLAUDE_CONFIG_DIR": config}
+        out = run(py("transcript.py") + ["digest"], root, env=env)
+        self.assertIn("s2.jsonl not found", out.stderr)
+        lines = out.stdout.split("\n")
+        self.assertEqual([l.split()[0] for l in lines if l][:3], ["09:00:00", "09:01:00", "11:00:00"],
+                         "oldest conversation first")
+        self.assertEqual(sum("SUB-TOOL Bash wc -l" in l for l in lines), 1, "repeated records counted once")
+        self.assertEqual(sum("SUB-DENIAL" in l for l in lines), 1)
+        self.assertNotIn("review the code", out.stdout, "a subagent's prompt is not a Lead turn")
+        self.assertLess(out.stdout.index("SUB-TOOL"), out.stdout.index("echo done"), "merged by time")
+        metrics = run(py("transcript.py") + ["metrics", "--since", "2026-01-01T10:00"], root, env=env).stdout
+        # one turn: 2 Lead tools (the subagent's call doesn't count), 1 denial from the subagent
+        self.assertIn("| 1 | 11:00 | 9 | 2 | 0 | 1 | 0 | 0 |", metrics)
+        self.assertNotIn("\n| 2 |", metrics, "the subagent's prompt starts no turn")
 
     def test_context_budget(self):
         write(self.tmp, "CLAUDE.md", "line one\nline two\n")
