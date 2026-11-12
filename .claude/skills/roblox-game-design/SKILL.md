@@ -91,7 +91,9 @@ tests (Tier 1, the smoke test, a balance simulator), `roblox-studio-mcp` for any
 Studio (`execute_luau`, Play), `roblox-playtest` for in-Studio verification, `roblox-capture`
 for screenshots. A task that does several kinds of work names every skill it needs, and its
 files are a checklist ticked as each is done, so an interrupted task can be resumed from the
-plan rather than reconstructed. Order tasks so something is playable early. Building starts only after the creator
+plan rather than reconstructed. **Size each task to fit one chat:** a task likely to need
+more than about 150 tool calls (several systems, a long tuning sweep, art for every tower) is
+split, because a chat's cost per step grows with everything it has done so far. Order tasks so something is playable early. Building starts only after the creator
 approves the plan (`CLAUDE.md`: never start a milestone without confirmation), or the
 GDD's *Owner involvement* pre-approves it (`roblox-lead`).
 

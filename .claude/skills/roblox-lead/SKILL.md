@@ -67,11 +67,12 @@ and must be able to tell the owner's words from yours.
 Every pause ends with: **Decided** · **Files** · **Progress** (pipeline line) · **Next**, plus
 the `(assumed)` decisions since the last report, listed first.
 
-At a milestone's end, once `docs/STATUS.md` is up to date, add one line under **Next**:
+At a milestone's end, and at each checkpoint of a milestone with several, once
+`docs/STATUS.md` and the plan's boxes are up to date, add one line under **Next**:
 "A new chat is the cheapest way to continue: it reads `docs/STATUS.md` and carries on from
 the repo." Every step of a chat re-sends its whole history, so one chat kept across
-milestones costs more each step and uses up usage limits fast. Say it only at a milestone's
-end, never mid-task.
+checkpoints costs more each step and uses up usage limits fast (`CLAUDE.md`, *Working
+economically*). Say it only at those stops, never mid-task.
 
 ## Human-only steps
 

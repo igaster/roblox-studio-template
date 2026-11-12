@@ -153,6 +153,21 @@ it, including mid-build, when a plan task names it:
 4. **Develop**: Edit Lua files in VS Code → changes sync to Studio automatically → test in Studio's play mode.
 5. **Commit**: only when the user asks; never push unless asked.
 
+### Working economically
+
+Every step of a chat re-sends everything the chat has done so far, so a step costs more the
+longer the chat runs, and usage limits run out fast.
+- **Fewer steps:** batch related edits into one, make independent tool calls in parallel,
+  and filter long command output (`tail`, `grep`) before it lands in the chat.
+- **One sweep, one table:** for tuning, write one script that runs the variants and prints a
+  compact table, rather than many separate runs.
+- **Cheapest tool first:** answer number questions (balance, pacing, economy) with the
+  simulation or model and Tier 1. Use Studio only for what they can't show (UI, replication,
+  saves, real code paths), and verify there once per checkpoint rather than after every change.
+- **Start a new chat at a boundary:** after a checkpoint or milestone, once `docs/STATUS.md`
+  and the plan's boxes are current, a new chat continues from the repo for a fraction of the
+  cost.
+
 ## Key Conventions
 
 - **Model Names = Config Keys**: Entity model names in Studio must exactly match their keys in `GameConfig.lua`.
