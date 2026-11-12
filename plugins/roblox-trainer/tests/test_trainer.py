@@ -179,6 +179,25 @@ class LeadTest(TempCase):
         self.assertEqual(s["leadSessionId"], "new-2")
         self.assertEqual([r["id"] for r in s["retiredLeadSessions"]], ["old-1"], "retired once")
 
+    def test_budget_guard_asks_the_lead_to_pause_at_the_threshold(self):
+        def at(u):
+            ev = {"type": "rate_limit_event", "rate_limit_info": {"unifiedWindows": {
+                "five_hour": {"utilization": u, "resetsAt": 1}}}}
+            return stub(self.tmp, f"cat >/dev/null\necho '{json.dumps(ev)}'\n"
+                                  "echo '{\"type\":\"result\",\"session_id\":\"s\",\"result\":\"ok\"}'\n")
+        flag = os.path.join(self.r, ".training", "pause-requested")
+        hook = lambda: run(py("lead.py") + ["pause-hook"], self.r, stdin="{}").stdout
+        out = self.lead("start", self.message("go"), claude=at(0.5)).stdout
+        self.assertIn("5-hour window at 50%", out)
+        self.assertFalse(os.path.exists(flag))
+        self.assertEqual(hook().strip(), "", "the hook is silent below the threshold")
+        out = self.lead("say", self.message("more"), claude=at(0.93)).stdout
+        self.assertTrue(os.path.exists(flag))
+        self.assertIn("asked to pause", out)
+        self.assertIn("pause at the next safe point", hook())
+        self.lead("say", self.message("after reset"), claude=at(0.1))
+        self.assertFalse(os.path.exists(flag), "a new call clears the request")
+
     def test_leading_dash_goes_via_stdin(self):
         cap = os.path.join(self.tmp, "cap.txt")
         claude = stub(self.tmp, f'cat > {cap}\nfor a in "$@"; do [ "$a" = "- leading dash" ] && exit 9; done\n'

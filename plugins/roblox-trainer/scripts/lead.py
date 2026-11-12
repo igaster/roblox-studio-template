@@ -8,6 +8,12 @@
   lead.py fresh [message-file]   retire the Lead's conversation and start a new one, told to
                                  continue from the repo (docs/STATUS.md), plus the message
   lead.py running                exit 0 and print the pids if a Lead call is running
+  lead.py pause-hook             (internal) the Lead's PostToolUse hook for the budget guard
+
+Budget guard: the event stream reports the account's 5-hour window (`rate_limit_event`,
+`five_hour.utilization`). At LEAD_PAUSE_AT (default 0.90) lead.py writes
+.training/pause-requested, and the Lead's PostToolUse hook then tells it to stop at a safe point
+and report; the remaining budget covers that. The flag is cleared when the next call starts.
 
 Why `fresh`: every step of a conversation re-sends its whole history, so one kept across
 milestones gets dearer per step and burns usage limits (run 002 M4k: 207 steps at 317k-505k
@@ -30,6 +36,26 @@ RESUME_TEXT = ("Sorry, I had to stop you partway through. Check where you left o
                "tests and Studio sync) and carry on from there.\n")
 FRESH_TEXT = ("We're continuing the game in this repo. You're picking it up from a new chat, so "
               "the repo is all you have: start from docs/STATUS.md.\n")
+PAUSE_TEXT = ("The owner's usage budget for this session is nearly used up, so pause at the next "
+              "safe point: finish only the change in progress, update docs/STATUS.md and the "
+              "plan's boxes with where you stopped and what comes next, then end your turn with a "
+              "short report. Don't start anything new.")
+
+
+def pause_at():
+    try:
+        return float(os.environ.get("LEAD_PAUSE_AT", "0.90"))
+    except ValueError:
+        return 0.90
+
+
+def five_hour_utilization(ev):
+    """The 5-hour window's utilization (0-1) from a rate_limit_event, else None."""
+    if ev.get("type") != "rate_limit_event":
+        return None
+    w = ((ev.get("rate_limit_info") or {}).get("unifiedWindows") or {}).get("five_hour") or {}
+    u = w.get("utilization")
+    return float(u) if isinstance(u, (int, float)) else None
 
 
 def die(msg, code=1):
@@ -50,6 +76,7 @@ class Session:
         self.state_path = os.path.join(self.root, "TRAINING_STATE.json")
         self.training = os.path.join(self.root, ".training")
         self.pid_path = os.path.join(self.training, "lead.pid")
+        self.pause_path = os.path.join(self.training, "pause-requested")
 
     def state(self):
         if not os.path.exists(self.state_path):
@@ -112,10 +139,28 @@ def profile():
     return json.load(open(PROFILE))
 
 
+def hook_settings():
+    """Settings for the Lead's calls only: the budget guard's PostToolUse hook."""
+    cmd = f"python3 -I '{os.path.abspath(__file__)}' pause-hook"
+    return json.dumps({"hooks": {"PostToolUse": [
+        {"matcher": "*", "hooks": [{"type": "command", "command": cmd}]}]}})
+
+
+def pause_hook():
+    """After each Lead tool call: silent unless a pause was requested."""
+    sys.stdin.read()
+    root = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True,
+                          text=True).stdout.strip()
+    if root and os.path.exists(os.path.join(root, ".training", "pause-requested")):
+        print(json.dumps({"hookSpecificOutput": {"hookEventName": "PostToolUse",
+                                                 "additionalContext": PAUSE_TEXT}}))
+    return 0
+
+
 def claude_args(extra):
     p = profile()
     return ([os.environ.get("CLAUDE_BIN", "claude"), "-p", *extra,
-             "--output-format", "stream-json", "--verbose",
+             "--output-format", "stream-json", "--verbose", "--settings", hook_settings(),
              "--mcp-config", ".mcp.json", "--strict-mcp-config",
              "--permission-mode", p["permissionMode"],
              "--allowedTools", *p["allowedTools"], "--disallowedTools", *p["disallowedTools"]])
@@ -179,9 +224,12 @@ def call(session, kind, text, resume=None):
         die(f"a Lead call is already running (pid {busy[0]}); wait, or lead.py stop")
     session.mark()
     try:
+        if os.path.exists(session.pause_path):
+            os.remove(session.pause_path)
         prompt = session.log_message(kind, text)
         extra = ["--resume", resume] if resume else []
         turns = Turns()
+        budget = None
         with open(prompt) as stdin, open(session.live_path(), "a", buffering=1) as live:
             proc = subprocess.Popen(claude_args(extra), cwd=session.root, stdin=stdin,
                                     stdout=subprocess.PIPE, text=True, start_new_session=True)
@@ -193,10 +241,19 @@ def call(session, kind, text, resume=None):
                     continue
                 live.write(json.dumps({"ts": now().isoformat(timespec="seconds"), "event": ev}) + "\n")
                 turns.feed(ev)
+                u = five_hour_utilization(ev)
+                if u is not None:
+                    budget = u
+                    if u >= pause_at() and not os.path.exists(session.pause_path):
+                        open(session.pause_path, "w").write(f"{u:.2f}\n")
             code = proc.wait()
         if turns.result.get("session_id"):
             session.save_session_id(turns.result["session_id"])
         print(turns.report())
+        if budget is not None:
+            paused = os.path.exists(session.pause_path)
+            print(f"\n[budget] 5-hour window at {budget:.0%}"
+                  + (f"; the Lead was asked to pause (threshold {pause_at():.0%})" if paused else ""))
         return code
     finally:
         session.unmark()
@@ -233,6 +290,8 @@ def stop(session):
 
 def main(argv):
     cmd = argv[1] if len(argv) > 1 else ""
+    if cmd == "pause-hook":
+        return pause_hook()
     session = Session()
     # A stop sends SIGTERM to this process too: exit cleanly so the running mark is removed.
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
