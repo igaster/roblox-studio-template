@@ -52,8 +52,10 @@ and must be able to tell the owner's words from yours.
    follow the plan task by task), with the testing pipeline (`roblox-test`) as you go. Before
    each task, load the skill it names (`CLAUDE.md`, *Skills to load*); a workflow skill
    running the plan doesn't replace them.
-3. **Verify and review:** milestone checks (`roblox-test`, `roblox-playtest`), then one fresh
-   reviewer subagent on the milestone's code; fix what it finds.
+3. **Verify and review:** milestone checks (`roblox-test`, `roblox-playtest`), then one
+   `roblox-reviewer` subagent on the milestone's code; fix what it finds. Its prompt gives
+   the scope (changed files, specs, plan) and the milestone's own risks; the agent holds the
+   checklist and the report format.
 4. **Result:** fill in the milestone's *Result* (stage 5), including the human-only checks
    still pending (phone, multiplayer, real players).
 5. **Stop or continue:** if this milestone is **Stop after**, report and end your turn.
@@ -76,11 +78,6 @@ end, never mid-task.
 Studio must be open with the Rojo plugin connected (`make verify`; `roblox-studio-mcp`). When
 something only a person at the machine can do is needed, say exactly what and why in plain
 text, keep doing work that doesn't need it, and end your turn when nothing is left.
-
-## Option for later
-
-A milestone can be delegated to the `game-developer` agent (`.claude/agents/`) instead of
-built in this session. Not used by default.
 
 ## Common mistakes
 

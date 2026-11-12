@@ -29,7 +29,7 @@ one-line idea to a milestone at a time.
 - **Design docs:** `docs/design/templates/` for a GDD, milestones, feature specs and reference
   teardowns; the game's own docs go next to them in `docs/design/`.
 - **Claude Code setup:** `CLAUDE.md` (conventions), skills in `.claude/skills/`, a
-  `game-developer` agent, and `.mcp.json` with the Roblox Studio MCP server and
+  `roblox-reviewer` agent (milestone code review), and `.mcp.json` with the Roblox Studio MCP server and
   [context7](https://context7.com) for current Roblox docs.
 
 ## Skills

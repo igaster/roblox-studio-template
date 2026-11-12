@@ -30,7 +30,11 @@ Status: designed, not built. Owner decision 2026-11-07: build later, once single
 
 - Upgrade a game in progress to a newer framework commit (framework-file manifest + merge).
 - `game/` folder split, making games portable across framework versions.
-- Option B Lead: delegate milestones to `game-developer` headless sessions.
+- Delegate build tasks to sub-agents (Option B). Skipped 2026-11-12, and the unused
+  `game-developer` agent removed: revisit only if a fresh Lead per milestone or checkpoint
+  still grows too large. A new builder agent needs: "don't design or change scope; report
+  deviations and why", the skills to load for its task, and what to do when it can't ask
+  the owner.
 - A dedicated `critic` agent for training reviews.
 
 ## Lint, format and type tooling
