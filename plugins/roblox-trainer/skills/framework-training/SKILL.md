@@ -101,8 +101,11 @@ Scripts live in `${CLAUDE_PLUGIN_ROOT}/scripts/` (when run from the repo:
    now in the tree are what the next milestone tests. `fresh` starts a new Lead conversation
    that continues from the repo (`docs/STATUS.md`), as the Lead's own milestone-end report
    suggests: every step re-sends a conversation's whole history, so one kept across
-   milestones burns usage limits. A milestone with several checkpoints can go fresh at a
-   checkpoint too. Use `say`, never `fresh`, to answer a question the Lead just asked. The
+   milestones burns usage limits. In a milestone with several checkpoints, go fresh at each
+   checkpoint too. For a heavy task (above the plan's size rule, or a long sweep), you can
+   ask the Lead to stop after that task and go fresh before the next. Measured in run 002
+   M4k: one conversation across tasks, 354 steps and ~69M tokens for one sweep task; fresh
+   per task, 194–224 steps and 27–35M; re-orienting costs ~40 steps. Use `say`, never `fresh`, to answer a question the Lead just asked. The
    fresh Lead runs the handoff check (`STATUS.md` against the code). A wrong or missing
    orientation in its first reply is a finding about the handoff docs.
 
