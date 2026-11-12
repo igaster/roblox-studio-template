@@ -29,6 +29,11 @@ The owner's words override the level: if they asked to be involved only for X, a
 When their words say they approve something in advance ("decide everything else"), record
 that as a decision record (`docs/decisions/`) and act on it; don't ask again.
 
+Requests the owner makes mid-milestone (a bug, a to-do) go into the milestone file under
+*Owner requests*, dated, in the owner's own words. Mark what you add to them (scope,
+edge cases such as "existing owners keep it") `(assumed)`: a later chat has only the repo
+and must be able to tell the owner's words from yours.
+
 ## Asking the owner
 
 - **Plain text only**, at the end of your reply, then end your turn. Never use interactive

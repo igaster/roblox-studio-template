@@ -2,7 +2,8 @@
 
 > Copy to `docs/STATUS.md`. Last updated: YYYY-MM-DD. This is the handoff page: a new chat
 > reads it first and can continue from here. Keep it current and short; details belong in
-> the linked docs.
+> the linked docs. A new chat checks it against the plan and the code, then rewrites it
+> before other work (`CLAUDE.md`, *Documentation*).
 
 ## Where we are
 - **Game**: one line.

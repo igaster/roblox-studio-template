@@ -209,6 +209,16 @@ it, including mid-build, when a plan task names it:
   something, update it and the affected docs: what was decided, built or found, and what
   waits on the creator. Fix a stale doc when you notice it; finished milestone files are a
   historical record, so note renames in `STATUS.md` instead.
+- **A new chat that reads `STATUS.md` cleans it up before acting on it.** A turn can end
+  early (a usage limit, a crash), so the page may describe a state that's already past. A
+  session-start hook says when files changed after the page was written. Check *Where we
+  are* against the plan's checkboxes and the code, then rewrite the page to what you
+  confirmed: delete claims you can't confirm, and set *Last updated*. Only then start other
+  work. A stale page left in place anchors the next chat too.
+- **Keep it current while building, not only at the end of a turn:** update `STATUS.md`
+  when a plan is approved and at each checkpoint. Tick a plan task's boxes when the task is
+  done, and tick a box only for work that exists (a capture's box once the file is in
+  `docs/captures/`).
 
 ## API Docs (context7)
 
