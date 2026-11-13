@@ -1,0 +1,5 @@
+{
+  "name": "roblox-framework",
+  "version": "0.1.0",
+  "description": "The Roblox game framework: skills, agents, commands and hooks for building a game in games/<name>/. Load with `make claude` from a game folder (claude --plugin-dir ../../plugins/roblox-framework)."
+}

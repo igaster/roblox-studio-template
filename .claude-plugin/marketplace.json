@@ -1,8 +1,13 @@
 {
   "name": "roblox-framework",
-  "description": "Optional plugins for this Roblox framework (off by default).",
+  "description": "The Roblox game framework (roblox-framework, loaded by each game's `make claude`) and its optional plugins (off by default).",
   "owner": { "name": "Giannis Gasteratos" },
   "plugins": [
+    {
+      "name": "roblox-framework",
+      "source": "./plugins/roblox-framework",
+      "description": "The framework itself: skills, agents, commands and hooks for building a game in games/<name>/."
+    },
     {
       "name": "roblox-trainer",
       "source": "./plugins/roblox-trainer",
