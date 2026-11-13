@@ -107,26 +107,48 @@ A child git repo under a parent folder, session started in the child:
 
 ## Phases
 
-### Phase 0: Remaining spikes (throwaway, scratchpad)
-- [ ] Real skills from a plugin: do `roblox-*` skills still trigger when namespaced
-      (`roblox-framework:roblox-lead`)? Re-run L-001's probe (domain skills load on cue).
-- [ ] `${CLAUDE_PLUGIN_ROOT}` inside skill text: substituted or not? Decides how skills name
-      framework paths (else a SessionStart hook prints `FACTORY=<abs path>`).
-- [ ] Rojo: `$path` outside the project folder (`../../src/shared`) serves and syncs.
-- [ ] `rojo sourcemap` of today's `default.project.json` vs the new game project: same
-      instance tree (names, classes), only file paths differ.
-- [ ] Lune: `tests/run.lua` run from a game folder finds `tests/specs` there and the harness at
-      `$FACTORY`.
-- [ ] Collaborator route: `claude plugin install roblox-framework@<marketplace> --scope project`
-      from a game folder; does it stay current after framework edits (L-083: cached copies)?
-- [ ] Record results here; drop anything that fails and pick the fallback named in the step.
+### Phase 0: Remaining spikes (throwaway, scratchpad) — DONE 2026-11-13
+Testbed: a scratch copy of the repo in the new layout (`games/ck` = Clockwork Keep's 254 files
+from the snapshot manifest + the template starters; framework skills/agents/commands/hooks
+packaged as `plugins/roblox-framework`).
+- [x] **Real skills from a plugin trigger.** "Add a sword tool…" (plan mode): old layout loads
+      `roblox-asset-generators`; game folder + `--plugin-dir` loads
+      `roblox-framework:roblox-asset-generators`. One sample each; the namespaced name is the
+      only difference. Skill references in `CLAUDE.md` should name skills without relying on
+      the prefix.
+- [x] **`${CLAUDE_PLUGIN_ROOT}` is substituted in skill text** (absolute plugin path). Skills
+      name framework files as `${CLAUDE_PLUGIN_ROOT}/../../<path>`.
+- [x] **Rojo `$path` outside the project folder works**, and **sourcemap parity holds**: today's
+      project vs `games/ck/default.project.json` (`../../src/shared`,
+      `../../src/framework/FrameworkSmokeTest.lua`): 127 instances each, identical names and
+      classes. Connecting Studio after the move deletes or recreates nothing.
+- [x] **Lune from a game folder: 1,590/0** (same as the old layout) and **balance check OK**
+      (0 of 2,540 baseline values changed), after three changes:
+      - framework runner becomes a module (`tests/runner.lua`); the game has a 6-line shim
+        `tests/run.lua` passing `requireSpec` and `requireGameConfig`; `tests/framework.lua`
+        becomes `function(requireGameConfig)`;
+      - the game's `.luaurc` aliases `framework` → `../..`; game code that used framework
+        libraries by relative path (`require("../lib/balance/…")`, 4 files in Clockwork Keep)
+        uses `@framework/tests/lib/…` (migration rewrites them; the modeling skill says so);
+      - framework code that names framework files relative to the working directory
+        (`Parallel.lune("tests/lib/balance/testdata/double.lua")`) prefixes `FRAMEWORK_ROOT`
+        (set by `framework.mk`). Game worker paths (`tests/sim/worker.lua`) stay game-relative.
+      - Also: the "every src/ file compiles" check must walk the game's `src/` and
+        `$FRAMEWORK_ROOT/src/`.
+- [x] **Collaborator install route:** an installed plugin is a cached copy that needs
+      `claude plugin update` after framework edits (README, L-083). Acceptable for
+      collaborators; `make claude` (`--plugin-dir`) stays the default.
+- [x] Parent-folder probe (earlier): parent `CLAUDE.md` loads; parent `.claude/{skills,agents}`
+      and settings hooks don't; `enabledPlugins` via a directory marketplace in the child's
+      settings didn't load headless.
+- [ ] Interactive only: a SessionStart hook's `systemMessage` shows on the start screen (Phase 4b).
 
 ### Phase 1: Framework as a plugin
 - [ ] Move `.claude/{skills,agents,commands,hooks}` → `plugins/roblox-framework/`; add
       `.claude-plugin/plugin.json`; list it in `.claude-plugin/marketplace.json`.
 - [ ] `hooks/hooks.json` carries `status-freshness.sh` and the session registry (Phase 4).
 - [ ] Root `.claude/settings.json` keeps only what factory-root sessions need.
-- [ ] `.claude/skills/roblox-trainer` (pointer skill): keep at the root (it's for the maintainer).
+- [ ] Hooks in the plugin use `${CLAUDE_PLUGIN_ROOT}` (today `$CLAUDE_PROJECT_DIR/.claude/hooks/…`).
 
 ### Phase 2: Template and new-game
 - [ ] `template/`: `game.json`, `CLAUDE.md` shim, `.claude/settings.json`, `Makefile` shim,
@@ -173,6 +195,34 @@ Files that name game or framework paths today: `CLAUDE.md`, `README.md`,
 - [ ] Trainer: `framework-review --game <name> --expert` reads `sessions.jsonl` (driver human)
       and the feedback file; ledger occurrences get `source: trainer|expert`;
       `learnings.py rank` weights `expert` higher. Only game-agnostic lessons are kept.
+
+### Phase 4b: Home screen (`/start`) — maintainer request 2026-11-13
+Problem: a fresh session (first-time user, or returning after weeks while the framework
+moved on) doesn't know how to continue.
+- [ ] `scripts/overview.py` (deterministic, cheap; the command only formats and offers
+      choices). From the repo root it reports:
+      - **framework:** commit, `framework:` commits since your last visit (`.local/last-seen`
+        per clone), and since each game's `frameworkCommit` (what a game hasn't been updated
+        for);
+      - **active game** (`.local/active-game`): title, milestone and checkpoint, *Waits on
+        the creator* from its `docs/STATUS.md`, open human checks, uncommitted changes, last
+        activity;
+      - **other games:** one line each (milestone, last activity, waiting items);
+      - **published?** from `game.json` (placeId, last publish noted by the publish step;
+        live state needs Open Cloud: later);
+      - **handover docs:** each game's `docs/STATUS.md`; `.training/STATUS.md` when the trainer
+        is present; `pending-decisions.md` count, harvest due.
+- [ ] `/start` command (root `.claude/commands/start.md`): runs the overview, then offers:
+      continue the active game (prints `cd games/<x> && make claude`, or with the trainer,
+      starts its Lead), switch game, new game (`make new-game`), a detailed report of one game
+      (STATUS, milestone boxes, decisions waiting, human checks), "what's new in the
+      framework". First run with no games: setup (`/roblox-initialize`) then new game.
+- [ ] Same command inside a game folder (from the framework plugin): that game's report only.
+- [ ] **Default screen:** a root SessionStart hook prints one line to the user
+      (`systemMessage`): "<Game> in progress (M4l, CP28; 2 items wait on you). /start for
+      options", or "No games yet: /start", or "Framework changed since your last visit
+      (N commits): /start". It also adds context for the agent: if the user's first message
+      names no task, offer `/start`. `CLAUDE.md` gets the same one line.
 
 ### Phase 5: Trainer on games/
 - [ ] `TRAINING_STATE.json` → `.training/games/<name>/state.json`; scenarios, messages and live
@@ -222,7 +272,10 @@ the test of this plan.
 - [ ] Overlay the game's files from the snapshot manifest's `files` list (moved, not copied, from
       the factory tree), keeping their relative paths; then delete the manifest's `deleted`
       starters (`ExampleMath.lua`, its spec).
-- [ ] `FRAMEWORK_FEEDBACK.md` → game root; `tdx.rbxl` → `.local/`.
+- [ ] Rewrite the 4 game files that require framework libraries by relative path
+      (`tests/sim/{KeepCheck,Report,Sidegrade}.lua`, `tests/specs/Balance.slow.spec.lua`) to
+      `@framework/…` (Phase 0).
+- [ ] `FRAMEWORK_FEEDBACK.md` → game root; `tdx.rbxl`, `tdx2.rbxl` → `.local/`.
 - [ ] `game.json`: title "Clockwork Keep", placeId 87673016436451, universeId 10775412362,
       `frameworkCommit` = the branch head.
 - [ ] Trainer state: `TRAINING_STATE.json` → `.training/games/clockwork-keep/state.json`;
@@ -244,6 +297,30 @@ the test of this plan.
       check against `docs/STATUS.md`) must orient correctly, find its skills, and make no
       reads or writes outside the game folder (check the transcript for `../` paths and
       denials). Then tasks 9–10 → CP29 and the M4l close-out run on the new layout.
+
+## Follow-ups (after the refactor)
+
+### Connect Rojo only to the right Studio place (maintainer request 2026-11-13)
+Two layers, both driven by `game.json`:
+- **Published place: Rojo's own guard.** The project file's `servePlaceIds` ("a list of place
+  IDs that this project may be live-synced to… helps prevent overwriting the wrong game",
+  rojo.space v7 project format). `new-game`/migration writes the game's placeId there, so the
+  Rojo plugin refuses to sync into any other published place, even after the user clicks
+  Connect. Test: a second place open → Connect is refused.
+- **Pre-serve check (`make serve`, agent side).** Before `rojo serve`, the Studio MCP's
+  `list_roblox_studios` gives every open Studio's name, `mode`, and either `placeId` /
+  `universeId` (published, `persistedToCloud`) or `file` (local file). Compare with
+  `game.json` (`placeId`, or `localFile` for a game kept as a file):
+  - no Studio open → "open <title> first";
+  - none matches → warn and name what is open;
+  - several Studios open, one matches → say which to connect from;
+  - a local-file game: match the file path; `servePlaceIds` can't help (unpublished places
+    have PlaceId 0), so this check is the only guard. Consider publishing early.
+  `make serve` is a shell command and can't call MCP itself: the check runs where an agent
+  starts Rojo (the `roblox-studio-mcp` skill's readiness step, `/start`, the trainer's
+  readiness), and `make serve` prints a reminder when `servePlaceIds` is empty.
+- After Accept, keep the existing sync probe (sizes or hashes of a synced script against disk,
+  L-015): it catches a stale session, which neither layer above does.
 
 ## Rollback
 
