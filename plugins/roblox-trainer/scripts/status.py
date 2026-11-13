@@ -94,24 +94,31 @@ def harvest_due(root):
 
 def main():
     root = run("git", "rev-parse", "--show-toplevel").strip()
-    gdd = os.path.join(root, "docs/design/GDD.md")
+    state_path = os.path.join(root, "TRAINING_STATE.json")
+    state = json.load(open(state_path)) if os.path.exists(state_path) else {}
+    game_dir = os.path.join(root, state["gameDir"]) if state.get("gameDir") else root
+    gdd = os.path.join(game_dir, "docs/design/GDD.md")
     game = (open(gdd).readline().strip("# \n").split(": Game Design Document")[0]
             if os.path.exists(gdd) else "(none: template only)")
+    if state.get("gameDir"):
+        game += f"  ({state['gameDir']})"
     archive = os.path.join(root, ".training", "archive")
     archived = sorted(os.listdir(archive)) if os.path.isdir(archive) else []
+    games_dir = os.path.join(root, "games")
+    games = sorted(g for g in os.listdir(games_dir)
+                   if os.path.isdir(os.path.join(games_dir, g))) if os.path.isdir(games_dir) else []
     changes = framework_changes(root)
     checks = run("python3", "-I", os.path.join(HERE, "human_checks.py"), "--count", cwd=root).strip()
     ready = harvest_ready(root)
     due = harvest_due(root).replace("\t", " · ")
     head = run("git", "log", "--oneline", "-1", cwd=root).strip()
 
-    print(f"Game in tree:     {game}")
+    print(f"Game:             {game}")
     print(f"Session:          {session(root)}")
     print(f"Lead:             {lead_state(root)}")
-    state_path = os.path.join(root, "TRAINING_STATE.json")
-    game_key = json.load(open(state_path)).get("game") if os.path.exists(state_path) else None
-    for line in live(root, game_key):
+    for line in live(root, state.get("game")):
         print(f"  {line}")
+    print(f"Games (games/):   {', '.join(games) or 'none'}")
     print(f"Archived games:   {', '.join(archived) or 'none'}")
     print(f"Framework HEAD:   {head}")
     print(f"Uncommitted framework changes: {len(changes)}")

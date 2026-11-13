@@ -22,8 +22,11 @@ milestones gets dearer per step and burns usage limits (run 002 M4k: 207 steps a
 tokens used a 5-hour window in 21 minutes). Use it at a milestone's end, never to answer a
 question the Lead just asked. The retired session ids stay in TRAINING_STATE.json.
 
-Prints the Lead's reply. Uses permissions/lead-profile.json and the project's .mcp.json. The
-Lead gets no training instructions: it only sees the brief and messages, like any owner's.
+Prints the Lead's reply. Uses permissions/lead-profile.json and the framework's .mcp.json. When
+the session names a game folder (`gameDir`: games/<name>), the Lead runs there, with the
+framework plugin (--plugin-dir) and the framework root as an added directory; the profile's
+.training/.ledger denials become absolute, and other games are denied. The Lead gets no
+training instructions: it only sees the brief and messages, like any owner's.
 Local records, all under .training/ (gitignored; the Lead is denied reading it):
   - messages/<game>/   every brief and message sent (the owner-proxy audit reads them);
   - live/<game>.jsonl  the Lead's events, timestamped, as it works (status.py shows the latest);
@@ -83,6 +86,11 @@ class Session:
         self.training = os.path.join(self.root, ".training")
         self.pid_path = os.path.join(self.training, "lead.pid")
         self.pause_path = os.path.join(self.training, "pause-requested")
+
+    def game_dir(self):
+        """Where the Lead works: the game's folder (games/<name>, its own repo) when the session
+        names one (`gameDir`), else the framework root (games built in place, before games/)."""
+        return os.path.join(self.root, self.state().get("gameDir") or ".")
 
     def state(self):
         if not os.path.exists(self.state_path):
@@ -145,31 +153,56 @@ def profile():
     return json.load(open(PROFILE))
 
 
-def hook_settings():
-    """Settings for the Lead's calls only: the budget guard's PostToolUse hook."""
-    cmd = f"python3 -I '{os.path.abspath(__file__)}' pause-hook"
+def hook_settings(root):
+    """Settings for the Lead's calls only: the budget guard's PostToolUse hook. The framework
+    root is passed in: inside a game folder, git would name the game's own repo."""
+    cmd = f"python3 -I '{os.path.abspath(__file__)}' pause-hook '{root}'"
     return json.dumps({"hooks": {"PostToolUse": [
         {"matcher": "*", "hooks": [{"type": "command", "command": cmd}]}]}})
 
 
-def pause_hook():
+def pause_hook(root=None):
     """After each Lead tool call: silent unless a pause was requested."""
     sys.stdin.read()
-    root = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True,
-                          text=True).stdout.strip()
+    root = root or subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True,
+                                  text=True).stdout.strip()
     if root and os.path.exists(os.path.join(root, ".training", "pause-requested")):
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "PostToolUse",
                                                  "additionalContext": PAUSE_TEXT}}))
     return 0
 
 
-def claude_args(extra):
+def denied_paths(session, rules):
+    """The profile names the trainer's folders relative to the framework root ("./.training/**").
+    A Lead working in games/<name> would read that as relative to the game, so rewrite them as
+    absolute, and deny the other games' folders too."""
+    root = session.root
+    out = [r.replace("(./", f"(/{root}/") for r in rules]
+    if session.state().get("gameDir"):
+        games = os.path.join(root, "games")
+        own = os.path.normpath(session.game_dir())
+        for name in sorted(os.listdir(games)) if os.path.isdir(games) else []:
+            other = os.path.join(games, name)
+            if os.path.isdir(other) and os.path.normpath(other) != own:
+                out += [f"Read(/{other}/**)", f"Edit(/{other}/**)", f"Write(/{other}/**)"]
+    return out
+
+
+def claude_args(session, extra):
+    """In a games/<name> session the Lead runs in the game folder: the framework plugin brings
+    the skills, the framework root is an added directory (game sessions may edit framework
+    files), and the MCP config is the framework's."""
     p = profile()
-    return ([os.environ.get("CLAUDE_BIN", "claude"), "-p", *extra,
-             "--output-format", "stream-json", "--verbose", "--settings", hook_settings(),
-             "--mcp-config", ".mcp.json", "--strict-mcp-config",
+    root = session.root
+    game = bool(session.state().get("gameDir"))
+    plugin = os.path.join(root, "plugins", "roblox-framework")
+    layout = (["--plugin-dir", plugin, "--add-dir", root] if game and os.path.isdir(plugin) else [])
+    return ([os.environ.get("CLAUDE_BIN", "claude"), "-p", *extra, *layout,
+             "--output-format", "stream-json", "--verbose", "--settings", hook_settings(root),
+             "--mcp-config", os.path.join(root, ".mcp.json"), "--strict-mcp-config",
              "--permission-mode", p["permissionMode"],
-             "--allowedTools", *p["allowedTools"], "--disallowedTools", *p["disallowedTools"]])
+             "--allowedTools", *p["allowedTools"],
+             "--disallowedTools", *denied_paths(session, p["disallowedTools"])])
 
 
 class Turns:
@@ -237,8 +270,10 @@ def call(session, kind, text, resume=None):
         turns = Turns()
         budget = {}  # window label -> latest utilization
         with open(prompt) as stdin, open(session.live_path(), "a", buffering=1) as live:
-            proc = subprocess.Popen(claude_args(extra), cwd=session.root, stdin=stdin,
-                                    stdout=subprocess.PIPE, text=True, start_new_session=True)
+            env = dict(os.environ, FRAMEWORK_DRIVER="lead")  # the session registry's driver
+            proc = subprocess.Popen(claude_args(session, extra), cwd=session.game_dir(), stdin=stdin,
+                                    stdout=subprocess.PIPE, text=True, start_new_session=True,
+                                    env=env)
             session.mark(child=proc.pid)
             for line in proc.stdout:
                 try:
@@ -299,7 +334,7 @@ def stop(session):
 def main(argv):
     cmd = argv[1] if len(argv) > 1 else ""
     if cmd == "pause-hook":
-        return pause_hook()
+        return pause_hook(argv[2] if len(argv) > 2 else None)
     session = Session()
     # A stop sends SIGTERM to this process too: exit cleanly so the running mark is removed.
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))

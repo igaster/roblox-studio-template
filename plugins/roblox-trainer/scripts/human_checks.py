@@ -10,7 +10,7 @@ Sources:
   - unchecked items in docs/TESTING.md, by section (template placeholder sections skipped).
 Run with `python3 -I`.
 """
-import glob, os, re, subprocess, sys
+import glob, json, os, re, subprocess, sys
 
 
 def root():
@@ -65,6 +65,17 @@ def collect(base):
     return out
 
 
+def game_base(root):
+    """The game's folder: the session's `gameDir` (games/<name>) when it names one, else the
+    framework root (games built in place, before games/). scorecard.py and status.py use it."""
+    state = os.path.join(root, "TRAINING_STATE.json")
+    try:
+        rel = json.load(open(state)).get("gameDir") if os.path.exists(state) else None
+    except ValueError:
+        rel = None
+    return os.path.join(root, rel) if rel else root
+
+
 def game_name(base):
     gdd = os.path.join(base, "docs/design/GDD.md")
     if not os.path.exists(gdd):
@@ -75,12 +86,13 @@ def game_name(base):
 
 def main(argv):
     base = root()
-    groups = collect(base)
+    game = game_base(base)
+    groups = collect(game)
     count = sum(len(items) for _, items in groups)
     if "--count" in argv:
         print(count)
         return
-    name = game_name(base) or "no-game"
+    name = game_name(game) or "no-game"
     text = [f"# Human checks: {name} ({count} open)", ""]
     for title, items in groups:
         text += [f"## {title}", ""] + [f"- [ ] {i}" for i in items] + [""]

@@ -19,8 +19,11 @@
 
 set -euo pipefail
 
-# Single source of truth for "framework files" (the trainer skills use `--list`).
+# Single source of truth for "framework files" (the trainer skills use `--list`). Games live in
+# games/<name>/ (gitignored here, each its own repo), so they can't be staged by mistake; the
+# old in-place paths stay listed so a tree from before games/ still classifies the same way.
 FRAMEWORK_PATHS=(CLAUDE.md README.md .claude .claude-plugin .github plugins scripts src/shared
+	template src/framework tests/runner.lua
 	src/game/ServerScriptService/FrameworkSmokeTest.lua docs/design/templates
 	docs/design/README.md docs/design/references/.gitkeep docs/design/milestones/.gitkeep
 	docs/design/features/.gitkeep docs/decisions/README.md docs/superpowers docs/TODO.md Makefile .mcp.json

@@ -75,11 +75,12 @@ def lead_numbers(since, until=None):
     return round(minutes), tools, denials, errors, prompts
 
 
-def checks(root):
-    testing = os.path.join(root, "docs/TESTING.md")
+def checks(game):
+    """(verified, open) checks of the game in its folder (human_checks.game_base)."""
+    testing = os.path.join(game, "docs/TESTING.md")
     verified = len(re.findall(r"^\s*- \[x\]", open(testing).read(), re.M)) if os.path.exists(testing) else 0
     hc = load("human_checks")
-    open_items = sum(len(items) for _, items in hc.collect(root))
+    open_items = sum(len(items) for _, items in hc.collect(game))
     return verified, open_items
 
 
@@ -88,9 +89,11 @@ def record(argv):
     opts = dict(zip(argv[2::2], argv[3::2]))
     since = opts.get("--since") or sys.exit("scorecard.py: --since <ISO> is required")
     root = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True).stdout.strip()
-    game = load("human_checks").game_name(root) or "-"
+    hc = load("human_checks")
+    game_dir = hc.game_base(root)
+    game = hc.game_name(game_dir) or "-"
     minutes, tools, denials, errors, prompts = lead_numbers(since, opts.get("--until"))
-    verified, open_items = checks(root)
+    verified, open_items = checks(game_dir)
     share = f"{100 * verified // (verified + open_items)}%" if verified + open_items else "-"
     row = (f"| {datetime.date.today()} | {run} | {game} | {milestone} | {minutes} | {tools} | {denials} | "
            f"{errors} | {prompts} | {opts.get('--reviewer-fixes', '-')} | {opts.get('--human-blockers', '-')} | "

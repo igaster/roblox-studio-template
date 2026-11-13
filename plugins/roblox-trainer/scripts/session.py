@@ -5,8 +5,12 @@
   session.py milestone <M>     record the milestone and the current framework commit
   session.py end               end the session
 
-`start` refuses if a session is already active, or if docs/design/GDD.md exists (another game
-occupies the tree) unless --continue is given and the GDD's title matches <kebab-name>
+Games live in games/<name>/ (each its own repo, made by `make new-game NAME=<name>`): `start`
+needs that folder and records it as `gameDir`; the Lead then works there. A framework without
+template/ (games built in place, before games/) uses the root as the game folder.
+
+`start` refuses if a session is already active, or if the game folder's docs/design/GDD.md
+exists unless --continue is given and the GDD's title matches <kebab-name>
 ("tiptoe-bandits" matches "# Tiptoe Bandits: Game Design Document"). The lock is the state
 file's status, "active" until `end` (tool calls run in short-lived shells, so a process id
 can't hold it). Run with `python3 -I`.
@@ -45,6 +49,15 @@ class Session:
         self.root = git(os.getcwd(), "rev-parse", "--show-toplevel") or die("not in a git repo")
         self.path = os.path.join(self.root, "TRAINING_STATE.json")
         self.gdd = os.path.join(self.root, "docs", "design", "GDD.md")
+        self.games_layout = os.path.isdir(os.path.join(self.root, "template"))
+
+    def use_game(self, name):
+        """In the games/ layout: the game's folder, relative to the root (it must exist)."""
+        rel = os.path.join("games", name)
+        if not os.path.isdir(os.path.join(self.root, rel)):
+            die(f"no {rel}/: create it first (make new-game NAME={name})")
+        self.gdd = os.path.join(self.root, rel, "docs", "design", "GDD.md")
+        return rel
 
     def load(self):
         if not os.path.exists(self.path):
@@ -80,6 +93,7 @@ class Session:
             die(USAGE)
         if self.active():
             die(f"a training session is already active (see {self.path}); run session.py end if it is over")
+        game_dir = self.use_game(name) if self.games_layout else None
         if os.path.exists(self.gdd):
             if mode != "continue":
                 die(f"a game already occupies this tree ({self.gdd}); use --continue to adopt it")
@@ -89,7 +103,8 @@ class Session:
         elif mode == "continue":
             die(f"--continue needs an existing {self.gdd}")
         stamp = now()
-        self.save({"game": name, "mode": mode, "place": place, "frameworkCommit": git(self.root, "rev-parse", "HEAD"),
+        self.save({"game": name, "gameDir": game_dir, "mode": mode, "place": place,
+                   "frameworkCommit": git(self.root, "rev-parse", "HEAD"),
                    "status": "active", "leadSessionId": None, "milestone": None, "history": [],
                    "startedAt": stamp, "updatedAt": stamp})
         print(f"Training session started for '{name}' (framework {git(self.root, 'rev-parse', '--short', 'HEAD')}).")

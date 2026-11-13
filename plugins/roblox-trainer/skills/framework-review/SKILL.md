@@ -17,7 +17,7 @@ skills, the templates or the shared modules fail, mislead, or slow the Lead down
    - `python3 -I scripts/transcript.py metrics` prints a per-turn table (minutes, tool calls,
      Studio calls, denials, errors, subagents, skill loads, usage-limit pauses) for the run
      record.
-2. **`FRAMEWORK_FEEDBACK.md`** at the repo root (the Lead's own friction log; older runs
+2. **`FRAMEWORK_FEEDBACK.md`** in the game folder (`gameDir`; before games/, the repo root) (the Lead's own friction log; older runs
    used `FEEDBACK.md`, read it too if present).
 3. **Framework files the Lead edited:** `git diff <frameworkCommit> -- $(bash
    plugins/roblox-trainer/scripts/commit-framework.sh --list)` plus `git status` for new

@@ -102,6 +102,64 @@ class SessionTest(TempCase):
         self.assertEqual(state(self.r)["place"], "Alpha Place")
 
 
+class GamesLayoutTest(TempCase):
+    """Framework with template/: games live in games/<name>/ and the Lead works there."""
+
+    def setUp(self):
+        super().setUp()
+        self.r = make_repo(self.tmp, {"CLAUDE.md": "# framework\n", "template/game.json": "{}\n",
+                                      "plugins/roblox-framework/.claude-plugin/plugin.json": "{}\n",
+                                      ".gitignore": "/games/\n"})
+        write(self.r, "games/alpha/docs/design/GDD.md", "# Alpha: Game Design Document\n")
+        write(self.r, "games/alpha/docs/TESTING.md", "## Play\n- [ ] `[playtest]` jump feels right\n")
+        write(self.r, "games/beta/README.md", "beta\n")
+
+    def test_session_needs_the_game_folder_and_records_it(self):
+        missing = run(py("session.py") + ["start", "gamma"], self.r)
+        self.assertNotEqual(missing.returncode, 0)
+        self.assertIn("make new-game", missing.stderr)
+        self.assertNotEqual(run(py("session.py") + ["start", "alpha"], self.r).returncode, 0,
+                            "alpha has a GDD: needs --continue")
+        self.assertEqual(run(py("session.py") + ["start", "alpha", "--continue"], self.r).returncode, 0)
+        self.assertEqual(state(self.r)["gameDir"], "games/alpha")
+
+    def test_lead_runs_in_the_game_folder_with_the_framework(self):
+        run(py("session.py") + ["start", "alpha", "--continue"], self.r)
+        cwd, args = os.path.join(self.tmp, "cwd.txt"), os.path.join(self.tmp, "args.txt")
+        claude = stub(self.tmp, f'cat >/dev/null\npwd -P > {cwd}\nprintf "%s\\n" "$@" > {args}\n'
+                                f'echo "$FRAMEWORK_DRIVER" >> {cwd}\n'
+                                'echo \'{"type":"result","session_id":"s-1","result":"ok"}\'\n')
+        write(self.tmp, "brief.txt", "brief")
+        run(py("lead.py") + ["start", os.path.join(self.tmp, "brief.txt")], self.r, env={"CLAUDE_BIN": claude})
+        where, driver = slurp(cwd).split("\n")[:2]
+        root = os.path.realpath(self.r)
+        self.assertEqual(where, os.path.join(root, "games", "alpha"))
+        self.assertEqual(driver, "lead")
+        argv = slurp(args).split("\n")
+        self.assertEqual(argv[argv.index("--plugin-dir") + 1],
+                         os.path.join(root, "plugins", "roblox-framework"))
+        self.assertEqual(argv[argv.index("--add-dir") + 1], root)
+        self.assertEqual(argv[argv.index("--mcp-config") + 1], os.path.join(root, ".mcp.json"))
+        self.assertIn(f"Read(/{root}/.training/**)", argv, "profile denials made absolute")
+        self.assertIn(f"Read(/{os.path.join(root, 'games', 'beta')}/**)", argv, "other games denied")
+        self.assertNotIn("Read(./.training/**)", argv)
+        hook = [a for a in argv if "pause-hook" in a]
+        self.assertTrue(hook and root in hook[0], "the pause hook gets the framework root")
+
+    def test_pause_hook_with_root_argument(self):
+        os.makedirs(os.path.join(self.r, ".training"), exist_ok=True)
+        write(self.r, ".training/pause-requested", "5-hour 0.95\n")
+        game = os.path.join(self.r, "games", "alpha")
+        git(game, "init", "-q")  # inside a game folder, git names the game's own repo
+        out = run(py("lead.py") + ["pause-hook", self.r], game, stdin="{}").stdout
+        self.assertIn("pause", out)
+
+    def test_human_checks_read_the_game_folder(self):
+        run(py("session.py") + ["start", "alpha", "--continue"], self.r)
+        self.assertEqual(run(py("human_checks.py") + ["--count"], self.r).stdout.strip(), "1")
+        self.assertRegex(run(py("status.py"), self.r).stdout, r"Game: +Alpha +\(games/alpha\)")
+
+
 # ---- commit-framework.sh -----------------------------------------------------------------
 class CommitFrameworkTest(TempCase):
     def setUp(self):
@@ -555,7 +613,7 @@ class GameTest(TempCase):
               "## M1 — <milestone name>\n- [ ] `[playtest]` ...\n## M1 — Core\n- [x] done\n- [ ] Phone layout\n")
         self.assertEqual(run(py("human_checks.py") + ["--count"], self.r).stdout.strip(), "3")
         add_game(self.r, "Beta")
-        self.assertRegex(run(py("status.py"), self.r).stdout, r"Game in tree: +Beta")
+        self.assertRegex(run(py("status.py"), self.r).stdout, r"Game: +Beta")
 
 
 if __name__ == "__main__":

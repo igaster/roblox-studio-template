@@ -32,22 +32,25 @@ claude plugin install roblox-trainer@roblox-framework --scope local
 
 Disable with `claude plugin disable roblox-trainer@roblox-framework`.
 
-## What it does (in-place mode)
+## What it does
 
-A training session builds one game in this repo's working tree:
+A training session builds one game in its folder, `games/<name>/` (its own repo; the trainer
+runs from the framework root):
 
-1. `scripts/session.py start <name>` (or `--continue` for the game already in the tree).
-2. You: Studio open on this project's place, Rojo plugin connected (once per session).
+1. `make new-game NAME=<name>` for a new game, then `scripts/session.py start <name>` (or
+   `--continue` for a game with a GDD). The session records the folder as `gameDir`.
+2. You: `make serve` in the game folder, Studio open on its place, Rojo plugin connected.
 3. The trainer starts a headless Lead (`scripts/lead.py`) with a scenario brief, answers it
-   as the owner, and reviews at each milestone end.
+   as the owner, and reviews at each milestone end. The Lead runs in the game folder with the
+   framework plugin; it is denied `.training/`, `.ledger/` and other games.
 4. Approved framework fixes are committed with `scripts/commit-framework.sh` (framework
    paths only, never game files). Nothing is pushed.
 
 Scenario briefs and owner policies live in `.training/scenarios/` (gitignored; the Lead is
 denied reading `.training/`). Run records go to `.ledger/runs/` after the run. Everything the
-trainer records in `.ledger/` stays local (gitignored); only its structure is committed. Games take turns in
-the tree (one at a time): `game-switch` parks a game in `.training/archive/` and loads
-another, and the framework stays shared and current throughout.
+trainer records in `.ledger/` stays local (gitignored); only its structure is committed. Games
+take turns (one active at a time): `game-switch` points the session at another folder in
+`games/`, and the framework stays shared and current throughout.
 
 ## Memory across games
 
@@ -76,7 +79,7 @@ Scripts (Python ones run with `python3 -I`):
   usage window (`LEAD_PAUSE_AT`) or of the weekly one (`LEAD_WEEKLY_PAUSE_AT`) the Lead is told
   to pause at a safe point and report; each call ends with a `[budget]` line for both windows. Logs every owner message
   to `.training/messages/` and streams the Lead's events to `.training/live/`.
-- `scripts/game.py`: `park`, `load`, `switch` and `list` games in `.training/archive/`.
+- `scripts/game.py`: legacy, for games built in place before `games/`: `park`, `load`, `switch` and `list` them in `.training/archive/`.
 - `scripts/human_checks.py`: every check still waiting for a human, from the milestone files
   and `docs/TESTING.md`.
 - `scripts/scorecard.py`: one row per milestone in `.ledger/scorecard.md`: how much an agent
@@ -96,7 +99,7 @@ Skills:
   and an audit of the owner's messages.
 - `framework-harvest`: curate the ledger into framework changes, asked for by the maintainer
   or run autonomously at a close-out when due (risky changes queued for the maintainer).
-- `game-switch`: move games in and out of the tree; the framework stays shared.
+- `game-switch`: train on another game in `games/`; the framework stays shared.
 
 Permission profile for the headless Lead: `permissions/lead-profile.json` (approved by the
 owner; never widened without approval).

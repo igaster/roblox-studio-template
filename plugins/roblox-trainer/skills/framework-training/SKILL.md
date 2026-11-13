@@ -3,12 +3,14 @@ name: framework-training
 description: Use when the maintainer asks to train or improve the framework by having a game built through it — e.g. "start a training session", "train the framework on a game like X", "continue training on <game>", "run the next training milestone".
 ---
 
-# Framework Training (in-place)
+# Framework Training
 
 ## Overview
 
 You are the **owner** of a game that the framework's Lead (`roblox-lead`, running headless)
-designs and builds in this repo's working tree. You give it a brief, answer its questions
+designs and builds in the game's folder, `games/<name>/` (its own repo; the framework is this
+repo's root). You run from the root; `lead.py` starts the Lead in the game folder with the
+framework plugin. You give it a brief, answer its questions
 from a policy (`owner-proxy`), and at each milestone end review the run for framework friction
 (`framework-review`) and propose framework fixes. **You never make a game decision yourself,
 and you never tell the Lead it's being trained.**
@@ -27,9 +29,8 @@ to `.ledger/` and `.training/` work in auto mode.
 1. **Scenario:** get the brief and owner policy from the maintainer (their message, or a file
    they point to). Keep it in **`.training/scenarios/<NNN>-<name>.md`**: `.training/` at the
    repo root is gitignored and the Lead's profile denies reading it. A game's scenario stays
-   there whether the game is live or archived; games switched out of the tree go to
-   `.training/archive/<NNN>-<name>/`. Never put scenario answers anywhere else in the repo:
-   the Lead could read them. Start from `scenarios/like-a-game.md` as the format.
+   there whichever game is active. Never put scenario answers anywhere else, above all not in
+   `games/`: the Lead could read them. Start from `scenarios/like-a-game.md` as the format.
    If the maintainer asks what to train on next, suggest a game that covers the emptiest rows
    of `.ledger/learnings/coverage.md`.
 2. **Framework committed** (before anything else, so the run is tied to a known commit):
@@ -37,7 +38,9 @@ to `.ledger/` and `.training/` work in auto mode.
    must be empty. If not, ask the
    maintainer to commit or discard those framework changes first.
 3. **Readiness** (before starting the session, so an aborted setup leaves no lock):
-   - `make verify` passes.
+   - The game folder exists (`make new-game NAME=<kebab-name>` for a new game, from a working
+     name in the scenario, e.g. `like-grow-a-garden`; the real title comes later from the GDD).
+   - `make serve` runs in the game folder (in the background), and `make verify` there passes.
    - Ask the maintainer once for the exact Studio place name for this game (as shown in
      Studio's title bar), unless you already know it from an earlier session.
    - Via the Studio MCP (yours, or a headless `claude -p --mcp-config .mcp.json`):
@@ -46,13 +49,10 @@ to `.ledger/` and `.training/` work in auto mode.
      disk (proves Rojo syncs *this* repo into *that* place).
    - Any mismatch or stale tree → ask the maintainer for the human step (open the right place;
      Rojo **Disconnect → Connect**), per `roblox-studio-mcp`. Don't start until it passes.
-4. **Start the session** (tree check): if `docs/design/GDD.md` exists:
-   - it's the game the maintainer wants to continue →
-     `session.py start <kebab-name> --continue --place "<place>"`;
-   - otherwise another game occupies the tree → stop and ask the maintainer what to do with
-     it. Don't move or delete game files yourself.
-   No GDD → `session.py start <kebab-name> --place "<place>"`, using a working name from the
-   scenario (e.g. `like-grow-a-garden`); the game's real title comes later from the Lead's GDD.
+4. **Start the session:** the game has a GDD (`games/<name>/docs/design/GDD.md`) →
+   `session.py start <name> --continue --place "<place>"`; no GDD →
+   `session.py start <name> --place "<place>"`. It records the folder as `gameDir`. Don't move
+   or delete game files yourself.
 
 ## 2. Run the Lead
 
@@ -113,7 +113,7 @@ to `.ledger/` and `.training/` work in auto mode.
    fresh Lead runs the handoff check (`STATUS.md` against the code). A wrong or missing
    orientation in its first reply is a finding about the handoff docs.
 
-To change which game is in the tree, use `game-switch`.
+To train on another game, use `game-switch`.
 
 ## 4. End
 

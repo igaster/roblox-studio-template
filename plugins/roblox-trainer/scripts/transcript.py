@@ -45,12 +45,14 @@ def find_transcripts():
     root = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True).stdout.strip()
     state = json.load(open(os.path.join(root, "TRAINING_STATE.json")))
     ids = session_ids(root, state) or sys.exit("transcript.py: no Lead session in TRAINING_STATE.json")
-    project = root.replace("/", "-")
-    bases = [os.environ["CLAUDE_CONFIG_DIR"]] if os.environ.get("CLAUDE_CONFIG_DIR") else glob.glob(os.path.expanduser("~/.claude*"))
+    # Every config dir (an account switch splits a milestone across them, and $CLAUDE_CONFIG_DIR
+    # names only the current one) and every project folder (a Lead in games/<name> is a
+    # different project from the framework root). Session ids are unique, so this is safe.
+    bases = sorted(set(([os.environ["CLAUDE_CONFIG_DIR"]] if os.environ.get("CLAUDE_CONFIG_DIR") else [])
+                       + glob.glob(os.path.expanduser("~/.claude*"))))
     files = []
     for sid in ids:
-        found = [p for p in (os.path.join(b, "projects", project, sid + ".jsonl") for b in bases)
-                 if os.path.exists(p)]
+        found = [p for b in bases for p in glob.glob(os.path.join(b, "projects", "*", sid + ".jsonl"))]
         if not found:
             print(f"transcript.py: {sid}.jsonl not found under {bases}; skipped", file=sys.stderr)
             continue
