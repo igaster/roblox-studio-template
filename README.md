@@ -26,9 +26,12 @@ one-line idea to a milestone at a time.
   greybox levels built by code.
 - **Three test tiers:** headless Lune unit tests (`make test`, also in CI), an in-engine smoke
   test, and a playtest checklist (`docs/TESTING.md`).
+- **Many games, one framework:** each game lives in `games/<name>/`, its own git repo, made
+  from `template/` by `make new-game`. Switching games is switching folders.
 - **Design docs:** `docs/design/templates/` for a GDD, milestones, feature specs and reference
-  teardowns; the game's own docs go next to them in `docs/design/`.
-- **Claude Code setup:** `CLAUDE.md` (conventions), skills in `.claude/skills/`, a
+  teardowns; each game's own docs live in its `docs/design/`.
+- **Claude Code setup:** `CLAUDE.md` (conventions), skills in the `roblox-framework` plugin
+  (`plugins/roblox-framework/`, loaded by each game's `make claude`), a
   `roblox-reviewer` agent (milestone code review), and `.mcp.json` with the Roblox Studio MCP server and
   [context7](https://context7.com) for current Roblox docs.
 
@@ -60,15 +63,18 @@ one-line idea to a milestone at a time.
 gh repo create my-game --template igaster/roblox-studio-template --clone
 cd my-game
 
-# 2. Bootstrap: installs Rojo + Lune and the Studio plugin, runs the headless tests,
-#    registers the Studio MCP server with Claude Code
+# 2. Bootstrap: installs Rojo + Lune and the Studio plugin, registers the Studio MCP server
+#    with Claude Code
 ./bootstrap.sh          # macOS/Linux
 bootstrap.bat           # Windows
 
-# 3. Rename the project: "name" in default.project.json
+# 3. Create a game (games/my-game/, its own git repo) and work from its folder
+make new-game NAME=my-game
+cd games/my-game
 
-# 4. Start syncing
+# 4. Start syncing, and start Claude Code with the framework loaded
 make serve
+make claude
 ```
 
 Then in Studio: open your place, connect the Rojo plugin to `localhost:34872`, and turn on
@@ -78,10 +84,18 @@ setup. In Claude Code, `/roblox-initialize` walks through the same steps.
 Then describe the game you want, e.g. "a game like X, but ...", and the design skill takes it
 from there.
 
+To switch games, stop `make serve`, `cd` into the other game's folder and start it there. A
+game cloned into `games/` from elsewhere needs `scripts/game-local.sh` once (per-clone
+permissions).
+
 ## Commands
+
+From the framework root: `make new-game NAME=<name>`, `make games` (list them). Everything
+else runs from a game folder:
 
 | Command | Description |
 |---|---|
+| `make claude` | Start Claude Code in this game with the framework plugin and MCP servers |
 | `make serve` | Start the Rojo server |
 | `make test` | Run the headless Lune tests (skips slow specs) |
 | `make test-all` | Run every Lune test, including slow simulation specs |
@@ -93,14 +107,21 @@ from there.
 ## Project structure
 
 ```
-src/
-├── game/                      # The game: GameConfig, Classes/, Modules/, Services/ (server),
-│                              # Controllers/ (client), AssetGenerators/, SmokeTest
-└── shared/                    # Framework modules → ReplicatedStorage.Shared
-tests/                         # run.lua (entry), framework.lua, harness.lua; specs/ (the game's)
-docs/design/                   # Templates; the game's GDD, milestones and specs
-docs/decisions/                # The game's decision records (one file each)
+CLAUDE.md                      # Conventions (load automatically in every game)
+plugins/roblox-framework/      # Skills, agents, commands, hooks
 plugins/roblox-trainer/        # Optional, off by default: see below
+src/shared/                    # Framework modules → ReplicatedStorage.Shared
+src/framework/                 # FrameworkSmokeTest
+tests/                         # runner.lua, framework.lua, harness.lua, lib/ (balance toolkit)
+docs/design/templates/         # Templates for a game's GDD, milestones, specs
+template/                      # The starter game (copied by make new-game, never edited)
+scripts/                       # verify, new-game, game-local, framework.mk
+games/<name>/                  # One folder per game, its own git repo (not tracked here):
+  game.json                    #   name, title, place ids, framework commit
+  src/game/                    #   GameConfig, Classes/, Modules/, Services/, Controllers/,
+                               #   AssetGenerators/, SmokeTest
+  tests/run.lua, tests/specs/  #   the game's tests (run.lua calls the framework's runner)
+  docs/                        #   STATUS, TESTING, design/, decisions/, captures/
 ```
 
 See `CLAUDE.md` for the full conventions.

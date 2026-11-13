@@ -1,49 +1,85 @@
 # Claude.md - Project Guidelines
 
 ## Project Overview
-Roblox game developed with Rojo for local development and live-syncing to Roblox Studio.
+A framework for building Roblox games with Rojo (local development, live-synced to Roblox
+Studio). Each game lives in its own folder, `games/<name>/`, which is its own git repo; the
+framework is this repo's root and is shared by every game.
 
 ## Setup
 - Rokit manages the toolchain. Install Rokit first: https://github.com/rojo-rbx/rokit
 - Run `./bootstrap.sh` after cloning to install Rojo and the Studio plugin automatically.
 - Tool versions (Rojo, Lune) are pinned in `rokit.toml`, the single source of truth. Don't restate version numbers elsewhere.
+- `make new-game NAME=<kebab-case>` creates `games/<name>/` from `template/`. After cloning a
+  game into `games/`, run `scripts/game-local.sh` (per-clone permissions).
 
 > **Claude:** If the toolchain looks missing (`make verify` fails on rokit/rojo/lune), suggest
 > running `/roblox-initialize`. Don't prompt for it on an already set-up clone.
 
 ## Key Commands
-- `make serve` - Start Rojo server
+Run from the game folder (`games/<name>/`):
+- `make claude` - Start Claude Code in this game with the framework loaded
+- `make serve` - Start Rojo server for this game
+- `make test` / `make test-all` / `make balance` / `make verify`
 - `rojo plugin install` - Install/update the Rojo plugin in Roblox Studio
 
-## Project Structure
+## Framework root and game root
+
+A session working on a game runs in the game folder: **every path in this file and in the
+skills is relative to the game root** (`src/game/…`, `docs/STATUS.md`, `tests/specs/`), unless
+it is marked as a framework path. Framework files are at `../../` from a game:
 
 ```
-src/
-├── game/                        # Game place
-│   ├── ReplicatedStorage/       # Downloaded by every client: no server-only logic here
-│   │   ├── GameConfig.lua       # All game configuration
-│   │   ├── Classes/             # Shared OOP classes (used by client and server)
-│   │   └── Modules/             # Pure utilities and *Math formulas (Lune-testable)
-│   ├── ServerScriptService/
-│   │   ├── Main.server.lua      # The only server Script: starts Services/
-│   │   ├── Services/            # Server game logic, one ModuleScript per system
-│   │   ├── Classes/             # Server-only OOP classes (economy, saving, spawning)
-│   │   └── SmokeTest.lua        # Tier 2 test (ModuleScript, never auto-runs)
-│   ├── StarterPlayerScripts/
-│   │   ├── Main.client.lua      # The only LocalScript: starts Controllers/
-│   │   └── Controllers/         # Client UI and input, one ModuleScript per concern
-│   └── ServerStorage/
-│       └── AssetGenerators/     # Programmatic asset creation scripts
-│           ├── GUI/
-│           ├── Models/
-│           ├── Parts/
-│           └── Tools/
-└── shared/                      # Framework modules only (TestHooks, TestAudio, Remotes,
-                                 # ServiceLoader, ConfigTypes, Greybox, SessionRecorder,
-                                 # ServerBridge, LayoutCheck, LayoutMath)
-                                 # → ReplicatedStorage.Shared.
-                                 # Game modules go in ReplicatedStorage/Modules/.
+<framework root>/                # this repo: the framework only
+├── CLAUDE.md                    # these conventions (loads automatically in every game)
+├── plugins/roblox-framework/    # skills, agents, commands, hooks (loaded by `make claude`)
+├── src/shared/                  # framework Luau modules → ReplicatedStorage.Shared
+├── src/framework/               # FrameworkSmokeTest (→ ServerScriptService)
+├── tests/                       # runner.lua, harness.lua, framework.lua, lib/ (balance toolkit)
+├── docs/design/templates/       # templates for the game's docs (read in place, never edited)
+├── template/                    # the starter game, only ever copied by new-game
+├── scripts/                     # verify.sh, new-game.sh, game-local.sh, framework.mk
+└── games/<name>/                # one folder per game, each its own git repo (below)
 ```
+
+A game session may edit framework files when the framework needs a fix. Keep such edits
+game-agnostic and commit them in the framework repo, never together with game changes
+(see *Framework friction*).
+
+## Project Structure (a game folder)
+
+```
+games/<name>/
+├── game.json                    # name, title, placeId, universeId, framework commit
+├── default.project.json         # Rojo: this game's src/ + the framework's src/shared
+├── Makefile                     # includes ../../scripts/framework.mk
+├── .luaurc                      # `@framework` alias → ../.. (framework Lua libraries)
+├── docs/                        # STATUS, TESTING, design/, decisions/, captures/
+├── tests/run.lua, tests/specs/, tests/sim/
+└── src/game/                    # Game place
+    ├── ReplicatedStorage/       # Downloaded by every client: no server-only logic here
+    │   ├── GameConfig.lua       # All game configuration
+    │   ├── Classes/             # Shared OOP classes (used by client and server)
+    │   └── Modules/             # Pure utilities and *Math formulas (Lune-testable)
+    ├── ServerScriptService/
+    │   ├── Main.server.lua      # The only server Script: starts Services/
+    │   ├── Services/            # Server game logic, one ModuleScript per system
+    │   ├── Classes/             # Server-only OOP classes (economy, saving, spawning)
+    │   └── SmokeTest.lua        # Tier 2 test (ModuleScript, never auto-runs)
+    ├── StarterPlayerScripts/
+    │   ├── Main.client.lua      # The only LocalScript: starts Controllers/
+    │   └── Controllers/         # Client UI and input, one ModuleScript per concern
+    └── ServerStorage/
+        └── AssetGenerators/     # Programmatic asset creation scripts
+            ├── GUI/
+            ├── Models/
+            ├── Parts/
+            └── Tools/
+```
+
+The framework's modules (TestHooks, TestAudio, Remotes, ServiceLoader, ConfigTypes, Greybox,
+SessionRecorder, ServerBridge, LayoutCheck, LayoutMath) are in the framework's `src/shared/`
+and appear in Studio as `ReplicatedStorage.Shared`; `shared/X.lua` below means that folder.
+Game modules go in `ReplicatedStorage/Modules/`.
 
 Anything in `ReplicatedStorage` is readable by exploiters. A class goes in
 `ReplicatedStorage/Classes/` only if the client needs it; otherwise in
@@ -119,10 +155,12 @@ The rule: **behavior and logic = code (git)**, **visual/3D assets = Studio**.
 
 ### Configuration Files
 
-- **`default.project.json`**: Rojo config — maps `src/` paths to Roblox services.
-- **`rokit.toml`**: Rokit toolchain configuration (pins Rojo and Lune versions).
-- **`Makefile`**: Build and serve commands.
-- **`bootstrap.sh`**: One-time setup script for fresh clones.
+- **`default.project.json`** (game): Rojo config — maps the game's `src/` and the framework's
+  `../../src/shared` to Roblox services.
+- **`game.json`** (game): the game's name, title, place and universe ids, framework commit.
+- **`Makefile`** (game): build and serve commands, from `../../scripts/framework.mk`.
+- **`rokit.toml`** (framework): Rokit toolchain configuration (pins Rojo and Lune versions).
+- **`bootstrap.sh`** (framework): one-time setup script for a fresh clone of the framework.
 
 ### Asset Generation Pattern
 
@@ -147,11 +185,13 @@ it, including mid-build, when a plan task names it:
 
 ## Development Workflow
 
-1. **Setup**: Run `./bootstrap.sh` once after cloning.
-2. **Start server**: `make serve`.
+1. **Setup**: Run `./bootstrap.sh` once after cloning the framework; `make new-game NAME=<name>`
+   for a new game (or clone a game into `games/` and run `scripts/game-local.sh`).
+2. **Start server**: `make serve` in the game folder (one game's Rojo server at a time).
 3. **Open Studio**: Open the matching place via Asset Manager → Places, then connect the Rojo plugin to `localhost:34872`.
 4. **Develop**: Edit Lua files in VS Code → changes sync to Studio automatically → test in Studio's play mode.
-5. **Commit**: only when the user asks; never push unless asked.
+5. **Commit**: only when the user asks; never push unless asked. Game changes go in the game's
+   repo, framework changes in the framework repo.
 
 ### Working economically
 
@@ -192,7 +232,8 @@ longer the chat runs, and usage limits run out fast.
   `Vector3`/`Color3`/`UDim2`/`CFrame`/`Enum`, so it loads under Lune and Tier 1 tests can use
   real config values. Store engine types as tables (`{ X = 1, Y = 4, Z = 1 }`,
   `{ R = 255, G = 200, B = 0 }`, `"Neon"`) and convert at the point of use with
-  `shared/ConfigTypes.lua`. `tests/framework.lua` fails if this rule is broken.
+  `shared/ConfigTypes.lua`. The framework's `../../tests/framework.lua` fails if this rule is
+  broken.
 - **Editing files**: change files with the Edit tool (several Edit calls are fine) and create
   them with Write. Don't splice code with Python, `sed` or heredoc scripts: an anchor that
   matches twice, or misses on whitespace, silently edits the wrong place, and the shell guard
@@ -220,7 +261,7 @@ longer the chat runs, and usage limits run out fast.
   `docs/design/`, and this file is not the place to record them.
 - **The docs are the handoff between chats**: a new chat must be able to continue from the
   repo alone. At the start of work, read `docs/STATUS.md` (create it from
-  `docs/design/templates/status.md` if missing). Before ending a turn that changed
+  `../../docs/design/templates/status.md` if missing). Before ending a turn that changed
   something, update it and the affected docs: what was decided, built or found, and what
   waits on the creator. Fix a stale doc when you notice it; finished milestone files are a
   historical record, so note renames in `STATUS.md` instead.
@@ -298,10 +339,12 @@ decisions and per-round milestones so a session can be analysed afterwards (see
 
 ## Framework friction
 
-This project is built on a template framework: `CLAUDE.md`, the skills in `.claude/`,
-`docs/design/templates/`, and the shared modules in `src/shared/`. When the framework is
-missing something you needed, is unclear, gives wrong or outdated guidance, or gets in your
-way, append one entry to `FRAMEWORK_FEEDBACK.md` at the repo root (gitignored) and carry on.
+This game is built on a framework (everything at `../../` except `games/`): `CLAUDE.md`, the
+skills in `plugins/roblox-framework/`, `docs/design/templates/`, `template/`, the shared
+modules in `src/shared/` and the test runner in `tests/`. When the framework is missing
+something you needed, is unclear, gives wrong or outdated guidance, or gets in your way,
+append one entry to `FRAMEWORK_FEEDBACK.md` at the game root (tracked with the game) and
+carry on.
 Don't go looking for problems; log friction when you actually hit it.
 
 ```markdown
@@ -312,9 +355,9 @@ Don't go looking for problems; log friction when you actually hit it.
 - **Suggestion:** (optional) how the framework could fix it
 ```
 
-A fix to the framework itself goes in its own commit, separate from game changes, touching
-only framework files, game-agnostic (no game names or game-specific examples), with its
-message prefixed `framework:`, so it can be carried back to the template unchanged.
+A fix to the framework itself is committed in the framework repo (the root, not the game's
+repo), touching only framework files, game-agnostic (no game names or game-specific
+examples), with its message prefixed `framework:`.
 
 ## Agent-driven Studio tools
 

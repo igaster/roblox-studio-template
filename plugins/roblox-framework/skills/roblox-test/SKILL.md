@@ -18,14 +18,16 @@ to these modules so the formula has one source of truth. Test them headlessly wi
 [Lune](https://github.com/lune-org/lune):
 
 ```sh
-lune run tests/run.lua   # from the project root (or `make test`); exits non-zero on failure
+make test               # from the game folder (= lune run tests/run.lua); exits non-zero on failure
 ```
 
 - **Run this yourself** after any change to pure logic — no Studio needed.
 - When adding logic, extract the pure part into a `*Math`/helper module and add a spec,
   `tests/specs/<Module>.spec.lua`. It's found automatically and returns `function(H)`,
   which receives the shared helpers `H.check`, `H.eq`, `H.near`, `H.section` (shape in the
-  header of `tests/run.lua`; `ExampleMath.spec.lua` is a sample).
+  header of the framework's `../../tests/runner.lua`; `ExampleMath.spec.lua` is a sample).
+  Framework Lua libraries are required through the game's `@framework` alias, e.g.
+  `require("@framework/tests/lib/balance/Parallel")`, never by a relative path.
 - **Design targets and acceptance criteria are tests.** When the GDD or a spec states a
   measurable target (pacing, difficulty, time-to-X), simulate it over the pure modules and
   `GameConfig` (step a session second by second, assert the target), and put its ID in the
@@ -33,9 +35,10 @@ lune run tests/run.lua   # from the project root (or `make test`); exits non-zer
   back to the spec.
 - **Long simulations** go in `<Name>.slow.spec.lua`: `make test` skips them, `make test-all`
   runs them. Keep `make test` fast enough to run after every change.
-- `tests/run.lua`, `tests/harness.lua` and `tests/framework.lua` (the framework's own
-  checks: GameConfig is plain Lua, ServiceLoader discovery) belong to the framework;
-  don't edit them for a game.
+- The game's `tests/run.lua` is a shim that hands the framework's runner
+  (`../../tests/runner.lua`) the game's specs and GameConfig. The runner, `harness.lua` and
+  `framework.lua` (the framework's own checks: GameConfig is plain Lua, every src/ file
+  compiles, ServiceLoader discovery) are framework files; don't edit them for one game.
 
 ## Tier 2 — In-engine integration smoke test
 

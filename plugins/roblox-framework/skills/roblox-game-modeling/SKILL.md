@@ -46,7 +46,7 @@ when it isn't.
 
 ## Building it
 1. **Write down the questions** the model must answer, in the balance doc (template:
-   `docs/design/templates/balance-model.md`).
+   `../../docs/design/templates/balance-model.md`).
 2. **Call the game's own pure modules** from the simulation and the model. Never copy a
    formula.
 3. **Move per-tick rules into pure modules too** (cooldowns, movement, status effects), or
@@ -108,7 +108,9 @@ A check that hasn't been run is reported as not run, never as passing.
 
 ## Re-evaluating after changes: the balance toolkit
 Mechanics change, and balance decisions made today stop holding. Keep the evidence
-re-runnable with the framework's toolkit in `tests/lib/balance/` (Lune, game-agnostic):
+re-runnable with the framework's toolkit in `../../tests/lib/balance/` (Lune, game-agnostic;
+require it as `@framework/tests/lib/balance/<Module>`; worker scripts passed to
+`Parallel.lune` are paths relative to the game root, e.g. `tests/sim/worker.lua`):
 
 | Module | What it does |
 |---|---|

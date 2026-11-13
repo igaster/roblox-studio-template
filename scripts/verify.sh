@@ -22,6 +22,13 @@ for tool in rokit rojo lune; do
 	if [ -n "$path" ]; then ok "$tool" "$path"; else fail "$tool" "not found on PATH or in ~/.rokit/bin (run ./bootstrap.sh)"; fi
 done
 
+# Run from a game folder (make verify there), the check names the game it's about.
+if [ -f game.json ]; then
+	ok "game" "$(basename "$PWD") (game.json)"
+else
+	echo "NOTE not in a game folder: Rojo serves one game at a time (cd games/<name> && make serve)"
+fi
+
 if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN 2>/dev/null | grep -q rojo; then
 	ok "rojo serve" "listening on $PORT"
 else

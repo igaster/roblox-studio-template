@@ -46,7 +46,7 @@ disagree, the `[verified]` source wins; note the conflict.
    research, but don't finish without them.
 2. Research public sources (source 2).
 3. Write `docs/design/references/<GameName>.md` from
-   `docs/design/templates/reference-teardown.md`.
+   `../../docs/design/templates/reference-teardown.md`.
 4. Return a short summary (≤10 lines) to the design session: the 2–3 load-bearing
    reasons it works, the conventions to keep, and the best "like X, but Y" openings.
    The design session then asks the creator to choose Y (`roblox-game-design`, stage 0).

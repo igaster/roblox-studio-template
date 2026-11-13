@@ -16,8 +16,12 @@ jobs:
       - name: Setup Rokit (Rojo, Lune)
         uses: CompeyDev/setup-rokit@v0.2.1
 
+      # The framework has no game of its own: check a game freshly made from template/.
+      - name: Create a game from the template
+        run: bash scripts/new-game.sh ci-template
+
       - name: Run tests
-        run: lune run tests/run.lua
+        run: make -C games/ci-template test
 
   rojo-build:
     name: Rojo project builds
@@ -28,12 +32,17 @@ jobs:
       - name: Setup Rokit (Rojo, Lune)
         uses: CompeyDev/setup-rokit@v0.2.1
 
-      # Catches a broken default.project.json, a $path that no longer exists and files Rojo
-      # can't turn into instances.
+      - name: Create a game from the template
+        run: bash scripts/new-game.sh ci-template
+
+      # Catches a broken default.project.json, a $path that no longer exists (including the
+      # framework paths at ../../) and files Rojo can't turn into instances.
       - name: Build the place
+        working-directory: games/ci-template
         run: rojo build default.project.json --output "$RUNNER_TEMP/place.rbxl"
 
       - name: Generate the sourcemap
+        working-directory: games/ci-template
         run: rojo sourcemap default.project.json --output "$RUNNER_TEMP/sourcemap.json"
 
   trainer-tests:

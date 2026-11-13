@@ -117,7 +117,7 @@ Key pitfalls this template avoids, each hit at least once in practice:
 
 ## Generic scenario setup — use TestHooks first
 
-TestHooks API (`src/shared/TestHooks.lua`, server side unless noted):
+TestHooks API (`../../src/shared/TestHooks.lua`, server side unless noted):
 
 | Function | Purpose |
 |---|---|

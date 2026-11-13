@@ -17,10 +17,10 @@ if %ERRORLEVEL% neq 0 (
     exit /b %ERRORLEVEL%
 )
 
-echo =^> Verifying headless test setup (Lune)...
-lune run tests/run.lua
+echo =^> Checking Lune...
+lune --version
 if %ERRORLEVEL% neq 0 (
-    echo ERROR: lune run tests/run.lua failed.
+    echo ERROR: lune --version failed.
     exit /b %ERRORLEVEL%
 )
 
@@ -45,7 +45,7 @@ if %ERRORLEVEL% neq 0 (
 
 echo.
 echo Done. Next steps:
-echo   1. Rename the project in default.project.json
-echo   2. Run: make serve
+echo   1. Create your first game: make new-game NAME=^<kebab-case-name^>, then cd games\^<name^>
+echo   2. In the game folder: make serve (and make claude to work on it with Claude Code)
 echo   3. Open Roblox Studio and connect the Rojo plugin to localhost:34872
 echo   4. In Studio: Assistant -^> ... -^> Manage MCP Servers -^> enable 'Enable Studio as MCP server'

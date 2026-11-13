@@ -14,7 +14,7 @@ building follows `CLAUDE.md` and the build skills. This skill adds only **how mu
 
 ## The owner contract
 
-`docs/design/GDD.md` has an **Owner involvement** section (from `docs/design/templates/GDD.md`):
+`docs/design/GDD.md` has an **Owner involvement** section (from `../../docs/design/templates/GDD.md`):
 
 - **Level:** `full` | `milestones` | `none` — what you ask vs. decide (table in the template).
 - **Stop after:** `M<N>` | `never`.

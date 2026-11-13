@@ -75,7 +75,7 @@ thing, no monetization, no persistence unless the loop needs it. Present as a sh
 
 ### 3. Milestone spec
 Only the current milestone gets full specs: the milestone file from
-`docs/design/templates/milestone.md`, one `features/<Name>.md` per feature from
+`../../docs/design/templates/milestone.md`, one `features/<Name>.md` per feature from
 `templates/feature-spec.md`, and their acceptance criteria copied into `docs/TESTING.md`.
 
 ### 4. Build handoff
@@ -128,7 +128,7 @@ Before planning a feature, answer, and show the answers:
 - What must exist first (persistence, an item worth trading, enough players)?
 - Is it in the current milestone? If not, offer the backlog or a later milestone.
 
-Then write `docs/design/features/<Name>.md` from `docs/design/templates/feature-spec.md`,
+Then write `docs/design/features/<Name>.md` from `../../docs/design/templates/feature-spec.md`,
 link it from the milestone's Scope table, and copy its acceptance criteria into
 `docs/TESTING.md` under that milestone.
 

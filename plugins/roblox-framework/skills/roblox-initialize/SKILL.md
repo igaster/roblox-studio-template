@@ -28,9 +28,11 @@ the first conversation in the project — don't wait to be asked a second time.
 4. **Recommended plugin:** if the `superpowers:*` skills aren't available in this session,
    suggest `/plugin install superpowers@claude-plugins-official` (then restart Claude Code).
    It adds the planning and plan-execution workflows the design pipeline uses when present;
-   the framework still works without it. The project's `.claude/settings.json` also enables
-   it, so Claude Code offers the install when the folder is trusted.
-5. **Rename the project:** update `"name"` in `default.project.json`.
+   the framework still works without it. Install it at user scope so every game folder gets
+   it.
+5. **First game:** `make new-game NAME=<kebab-case>` creates `games/<name>/`; set `"name"` in
+   its `default.project.json` and `title` in its `game.json`. Then work from that folder
+   (`cd games/<name> && make claude`).
 6. **Verify:** confirm Rojo shows connected in Studio. Optionally verify MCP via
    `roblox-studio-mcp`'s trivial `execute_luau` call.
 
