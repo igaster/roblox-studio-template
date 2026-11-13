@@ -233,32 +233,131 @@ Files that name game or framework paths today: `CLAUDE.md`, `README.md`,
       `learnings.py rank` weights `expert` higher. Only game-agnostic lessons are kept.
 
 ### Phase 4b: Home screen (`/start`) — maintainer request 2026-11-13
-Problem: a fresh session (first-time user, or returning after weeks while the framework
-moved on) doesn't know how to continue.
-- [ ] `scripts/overview.py` (deterministic, cheap; the command only formats and offers
-      choices). From the repo root it reports:
-      - **framework:** commit, `framework:` commits since your last visit (`.local/last-seen`
-        per clone), and since each game's `frameworkCommit` (what a game hasn't been updated
-        for);
-      - **active game** (`.local/active-game`): title, milestone and checkpoint, *Waits on
-        the creator* from its `docs/STATUS.md`, open human checks, uncommitted changes, last
-        activity;
-      - **other games:** one line each (milestone, last activity, waiting items);
-      - **published?** from `game.json` (placeId, last publish noted by the publish step;
-        live state needs Open Cloud: later);
-      - **handover docs:** each game's `docs/STATUS.md`; `.training/STATUS.md` when the trainer
-        is present; `pending-decisions.md` count, harvest due.
-- [ ] `/start` command (root `.claude/commands/start.md`): runs the overview, then offers:
-      continue the active game (prints `cd games/<x> && make claude`, or with the trainer,
-      starts its Lead), switch game, new game (`make new-game`), a detailed report of one game
-      (STATUS, milestone boxes, decisions waiting, human checks), "what's new in the
-      framework". First run with no games: setup (`/roblox-initialize`) then new game.
-- [ ] Same command inside a game folder (from the framework plugin): that game's report only.
-- [ ] **Default screen:** a root SessionStart hook prints one line to the user
-      (`systemMessage`): "<Game> in progress (M4l, CP28; 2 items wait on you). /start for
-      options", or "No games yet: /start", or "Framework changed since your last visit
-      (N commits): /start". It also adds context for the agent: if the user's first message
-      names no task, offer `/start`. `CLAUDE.md` gets the same one line.
+
+**Problem.** A fresh session doesn't know how to continue: a first-time user has no game and
+no idea of the steps; a returning user (weeks later) doesn't know which game was in progress,
+what waits on them, or what changed in the framework meanwhile.
+
+**Goal.** One screen that answers *where am I, what needs me, what can I do next*, offered
+automatically at session start, with follow-ups for detail. It is read-only and cheap: a
+script gathers everything, the agent only formats it and offers choices.
+
+#### Who sees what
+
+| Situation | Banner at session start (one line, shown to the user) | `/start` shows |
+|---|---|---|
+| First run: toolchain missing | "Setup isn't finished: /start" | setup steps (`/roblox-initialize`) |
+| No games yet | "No games yet: /start to create your first" | how a game is made; offer `make new-game` |
+| Returning, games exist | "Clockwork Keep in progress (M4l, CP28; 2 items wait on you): /start" | overview below |
+| Framework changed since last visit | "…; framework changed since your last visit (7 commits): /start" | overview + *What's new* |
+| Session started in a game folder | "Clockwork Keep (M4l, CP28; 2 items wait on you): /start" | that game's report only |
+
+#### The overview (framework root)
+
+```
+Framework   main @ 0ddf068 (clean)          what's new since your last visit: 7 commits
+Toolchain   rokit, rojo, lune OK            Rojo: not running
+
+Games
+▶ Clockwork Keep   games/clockwork-keep   M4l · CP28 · 2 wait on you · 84 human checks
+                   last activity 2026-11-13 · 3 uncommitted files · framework 0ddf068 (current)
+  Tiptoe Bandits   games/tiptoe-bandits   M2 done · nothing waits · last activity 2026-11-08
+                   built on framework 5a1c2e0 (31 commits behind)
+
+Handover    games/clockwork-keep/docs/STATUS.md (updated 2026-11-13)
+Training    session active (clockwork-keep) · Lead idle · .training/STATUS.md · 3 pending decisions
+
+Next:  1 Continue Clockwork Keep   2 Details of a game   3 Switch game   4 New game
+       5 What's new in the framework   6 Training status (trainer only)
+```
+
+#### Actions
+
+- **Continue the active game.** A command can't move the running session into another folder,
+  and a root session doesn't load the framework plugin, so this prints the one command to run:
+  `cd games/<name> && make claude` (and `make serve` in another terminal if Rojo isn't
+  running). With the trainer present, it also offers the trainer's next step from
+  `.training/STATUS.md`.
+- **Details of a game** (follow-up, no switch): its `STATUS.md` sections *Where we are* and
+  *Waiting on the creator*, the current milestone's open boxes, decisions marked waiting, open
+  human checks by section, uncommitted changes in its repo, published state, framework commit
+  it last ran on.
+- **Switch game:** writes `.local/active-game`; prints the stop/start steps (stop Rojo for the
+  old game, `make serve` in the new one, open its place in Studio, connect). Coming back to an
+  older game shows how far its framework commit is behind and suggests `make test` first.
+- **New game:** asks the kebab-case name, runs `make new-game NAME=<name>`, writes
+  `.local/active-game`, then prints `cd games/<name> && make claude` and suggests `/kickoff`.
+- **What's new in the framework:** `framework:` commits since `.local/last-seen`, grouped and
+  summarised in plain words; then sets `.local/last-seen` to `HEAD` (only `/start` updates it,
+  so the banner keeps saying "changed" until the user has actually looked).
+- **Training status** (only when `plugins/roblox-trainer` and `.training/` exist): the
+  trainer's `status.py` screen.
+
+#### Data sources (all local, no network)
+
+| Item | Source |
+|---|---|
+| games, title, place ids, framework commit | `games/*/game.json` |
+| milestone, checkpoint | the game's `docs/STATUS.md` *Where we are* (first lines); fallback: newest `docs/design/milestones/M*.md` with open boxes |
+| "wait on you" | items under *Waiting on the creator* in the game's `STATUS.md` |
+| human checks | the same rules as the trainer's `human_checks.py` (milestone "Still needs a human" + unchecked `TESTING.md` items), moved into the framework script so both use one copy |
+| last activity, uncommitted | the game repo's `git status` / newest file mtime under `src docs tests` |
+| framework state, what's new | `git` at the root; `.local/last-seen` |
+| active game | `.local/active-game`; else the game with the newest activity |
+| published | `game.json` `placeId` set → "has a place"; a `lastPublished` field (written by hand or a future publish step). Live state needs Open Cloud: later |
+| toolchain, Rojo | the same checks as `verify.sh` (no Studio check: too slow for a banner) |
+| training | `TRAINING_STATE.json`, `.training/STATUS.md`, `pending-decisions.md` count |
+
+#### Files
+
+- [ ] `scripts/overview.py` (framework, `python3 -I`): `overview.py` (full, as JSON or text),
+      `overview.py --game <name>` (details), `--banner` (the one line + agent context, as hook
+      JSON), `--seen` (set `.local/last-seen`). Must finish in well under a second; any error
+      prints nothing and exits 0 (a broken banner must never break a session).
+- [ ] `.claude/commands/start.md` (root): runs `overview.py`, presents it (the table above),
+      offers the actions with `AskUserQuestion`, runs the chosen one.
+- [ ] `plugins/roblox-framework/commands/start.md` (in a game folder): `overview.py --game
+      <this>`; actions: details, "what's new", and how to switch (print the root command). It
+      never reads `.training/` (the game's permissions deny it anyway).
+- [ ] Root `.claude/settings.json` SessionStart hook: `overview.py --banner` → `systemMessage`
+      (the line) + `additionalContext` ("if the user's first message names no task, offer
+      /start"). The framework plugin's SessionStart hook does the same for a game folder,
+      next to `status-freshness.sh`.
+- [ ] `CLAUDE.md`: one line under *Development Workflow*: "Not sure where things stand? `/start`."
+- [ ] `roblox-initialize` ends by suggesting `/start`.
+- [ ] Tests: `scripts/tests/test_overview.py` with throwaway repos (no games; one game with a
+      STATUS; two games, one behind the framework; broken `game.json`; no git in a game) and
+      the banner's three wordings; run in CI next to the trainer tests.
+
+#### Edge cases
+
+- A game folder without `game.json` (cloned by hand) → listed as "not set up: run
+  `scripts/game-local.sh`" and offered the fix.
+- A game repo with no commits yet (the current state) → "no commits" instead of a date.
+- `.local/active-game` naming a deleted game → ignored, falls back to newest activity.
+- Legacy `.training/archive/` games (trainer only) → listed under *Archived* with the
+  Phase 7 move as the action.
+
+#### Checks (definition of done)
+
+- [ ] A fresh clone with no games: the banner says "No games yet", `/start` → new game →
+      `make claude` in it works.
+- [ ] This repo: the banner names Clockwork Keep, M4l, the waiting items; `/start` → details
+      match its `STATUS.md`.
+- [ ] After a framework commit, the banner says "framework changed"; after *What's new*, it
+      doesn't.
+- [ ] Started in `games/clockwork-keep`: the game banner and the game report; no `.training`
+      read in the transcript.
+- [ ] The banner adds < 1 s to session start (`time overview.py --banner`).
+- [ ] Interactive check that `systemMessage` shows on the start screen (Phase 0 left open).
+
+#### Open questions
+
+1. Name: `/start`, `/home` or `/status`? (`/start` reads well for a first-time user.)
+2. Should *Continue* in a root session offer to launch `make claude` in a new terminal
+   (macOS `open -a Terminal`), or only print the command? Proposed: print only.
+3. Published state: is a hand-written `lastPublished` in `game.json` enough until Open Cloud
+   is set up?
 
 ### Phase 5: Trainer on games/
 - [ ] `TRAINING_STATE.json` → `.training/games/<name>/state.json`; scenarios, messages and live
