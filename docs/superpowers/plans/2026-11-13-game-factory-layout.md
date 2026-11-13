@@ -163,6 +163,22 @@ it; a game session reads framework files, is denied `.training/`, and loads
 - Not done yet: the root's `make` forwards to `.local/active-game`, which nothing writes until
   `/start` (Phase 4b).
 
+### Phase 5: DONE 2026-11-13 (fe9af48)
+Kept `TRAINING_STATE.json` at the root (the trainer's one state file) with a new `gameDir`,
+rather than moving state to `.training/games/<name>/`: same effect, far less churn. Deferred.
+`lead.py` runs the Lead in `gameDir` with `--plugin-dir`, `--add-dir <root>`, the root's
+`.mcp.json`, absolute `.training/.ledger` denials and other games denied; the budget hook gets
+the root as an argument (inside a game folder git names the game's repo). `transcript.py`
+searches every config dir and project folder (fixes the L-092 gap). Trainer tests 28/28.
+
+### Phase 6: DONE 2026-11-13 (move) — Lead test pending
+Moved the 251 untracked game files + `FRAMEWORK_FEEDBACK.md` + place files (`.local/`) into
+`games/clockwork-keep/` (made by `new-game`, `git init`, nothing committed); removed the 2
+deleted starters; rewrote 4 requires to `@framework`; `game.json` filled; session `gameDir`
+set. Checks: Rojo tree 127 = 127 (identical to before the move); Tier 1 1,590/0; balance OK;
+framework repo clean; `status.py` shows the game. Pending: Studio reconnect + sync probe, then
+the fresh-Lead test (task 9).
+
 ### Phase 1: Framework as a plugin
 - [ ] Move `.claude/{skills,agents,commands,hooks}` → `plugins/roblox-framework/`; add
       `.claude-plugin/plugin.json`; list it in `.claude-plugin/marketplace.json`.
