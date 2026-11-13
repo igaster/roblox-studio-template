@@ -424,6 +424,10 @@ class LearningsTest(TempCase):
         write(os.path.join(self.dir, "harvests"), "002.md",
               "# Harvest 002 (2026-01-03)\n- **Milestones at harvest:** 1\n")
         self.assertIn("DUE\t3 milestones since harvest 002", self.learn("due").stdout)
+        write(os.path.join(self.dir, "harvests"), "003.md",
+              "# Harvest 003 (2026-01-02)\n- **Milestones at harvest:** 9\n")
+        out = self.learn("due").stdout
+        self.assertIn("2 milestones since harvest 003", out, "more milestones than rows: count by date (L-096)")
         write(self.dir, "pending-decisions.md", "## L-001\n- **Status:** pending\n## L-002\n- **Status:** pending\n")
         self.assertIn("pending decisions: 2", self.learn("due").stdout)
 
@@ -518,13 +522,18 @@ class TranscriptBudgetTest(TempCase):
 
     def test_context_budget(self):
         write(self.tmp, "CLAUDE.md", "line one\nline two\n")
-        write(self.tmp, ".claude/skills/one/SKILL.md", "---\nname: one\ndescription: eight ch\n---\nbody\n")
+        write(self.tmp, "plugins/roblox-framework/skills/one/SKILL.md",
+              "---\nname: one\ndescription: eight ch\n---\nbody\n")
         budget = os.path.join(SCRIPTS, "context-budget.sh")
         table = run(["bash", budget], self.tmp, env={"BUDGET_ROOT": self.tmp}).stdout
         self.assertIn("| CLAUDE.md | 2 | 4 |", table)
         self.assertIn("| one | 5 |", table)
         total = run(["bash", budget, "--total"], self.tmp, env={"BUDGET_ROOT": self.tmp}).stdout
         self.assertIn("always-loaded ~6 tokens", total)
+        self.assertIn("all skill bodies ~11 tokens", total)
+        write(self.tmp, "template/CLAUDE.md", "game notes here\n")  # 16 chars: every game loads it
+        total = run(["bash", budget, "--total"], self.tmp, env={"BUDGET_ROOT": self.tmp}).stdout
+        self.assertIn("always-loaded ~10 tokens", total)
 
 
 # ---- game.py, human_checks.py, status.py -------------------------------------------------

@@ -122,8 +122,12 @@ def due():
         since, label = len(dates), "no harvest yet"
     else:
         num, date, at = last
-        done = at if at is not None else sum(1 for d in dates if d <= date)
-        since, label = len(dates) - done, f"since harvest {num} ({date})"
+        # "Milestones at harvest" can count milestones that have no scorecard row (run 001,
+        # rows added later), which made `since` negative (L-096). Trust it only when it fits
+        # the scorecard; otherwise count rows dated after the harvest.
+        by_date = sum(1 for d in dates if d <= date)
+        done = at if at is not None and at <= len(dates) else by_date
+        since, label = max(0, len(dates) - done), f"since harvest {num} ({date})"
     reasons = []
     if len(ready) >= READY_MIN:
         reasons.append(f"{len(ready)} ready cards (>= {READY_MIN})")

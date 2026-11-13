@@ -8,22 +8,26 @@ a second opinion the trainer can't anchor.
 
 You are reviewing how a game-development **framework** performed for an AI agent (the "Lead")
 that just built one milestone of a Roblox game with it. Review the framework, not the game.
-The framework is `CLAUDE.md`, the skills in `.claude/skills/`, the shared modules in
-`src/shared/`, the templates in `docs/design/templates/` and the tooling (`Makefile`,
-`scripts/`).
+The framework is the repo root `{ROOT}` (its `CLAUDE.md` describes the layout): `CLAUDE.md`,
+the skills, agents, commands and hooks in `plugins/roblox-framework/`, the shared modules in
+`src/shared/`, the doc templates in `docs/design/templates/`, the starter game `template/`,
+and the tooling (`scripts/`, `tests/`). The game is `{GAME_DIR}`, its own folder; the Lead
+works there and reaches the framework at `../../`.
 
 Read only these:
 - Transcript digest (one line per tool call, skill load, error, denial and Lead message):
   `{DIGEST}`
-- The Lead's own friction log: `FRAMEWORK_FEEDBACK.md`
+- The Lead's own friction log: `{GAME_DIR}/FRAMEWORK_FEEDBACK.md` (this milestone's entries
+  are the last ones)
 - Framework files the Lead edited: `{FRAMEWORK_DIFF}` (empty means none)
 - The milestone's result: `{MILESTONE_FILE}` (its *Result* section)
 - The owner's messages to the Lead, in order: `{MESSAGES_DIR}`
 - The owner's policy: `{SCENARIO}`
 - The framework itself, whenever you need to check what it says.
 
-Don't read `.ledger/` or anything else the trainer wrote:
-the point is an opinion formed without them.
+Don't read `.ledger/`, `.training/` (beyond the policy file above), `plugins/roblox-trainer/`
+or anything else the trainer wrote: the point is an opinion formed without them. Read only;
+don't edit any file.
 
 ## Part 1: framework findings
 

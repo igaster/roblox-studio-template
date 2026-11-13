@@ -22,7 +22,8 @@ skills, the templates or the shared modules fail, mislead, or slow the Lead down
 3. **Framework files the Lead edited:** `git diff <frameworkCommit> -- $(bash
    plugins/roblox-trainer/scripts/commit-framework.sh --list)` plus `git status` for new
    files under those paths (frameworkCommit from `TRAINING_STATE.json` history). Any edit there is a strong signal: the Lead worked around the framework.
-4. **Artifacts:** the milestone file's *Result*, `docs/decisions/`, `docs/STATUS.md`, `docs/TESTING.md`.
+4. **Artifacts** in the game folder (`gameDir`): the milestone file's *Result*, `docs/decisions/`,
+   `docs/STATUS.md`, `docs/TESTING.md`.
 5. **Your own notes** from `owner-proxy`: uncovered questions, and the permission denials
    `lead.py` printed.
 6. **Owner messages:** `.training/messages/<game>/` (every brief and message `lead.py` sent).
@@ -38,7 +39,9 @@ writing findings, get one that isn't:
 
 1. Write the digest to a scratch file, and the framework diff (input 3) to another.
 2. Spawn a **fresh** general-purpose subagent (not a fork) with the prompt in
-   `skills/framework-review/blind-reviewer.md`, its placeholders filled in. Give it nothing
+   `skills/framework-review/blind-reviewer.md`, its placeholders filled in with absolute paths
+   (`{ROOT}`, `{GAME_DIR}`, the milestone file, the owner messages of this milestone only,
+   copied to a scratch folder). Give it nothing
    else: no summary, no hypotheses, no ledger.
 3. Write your own findings without reading its report first, then compare:
    - **both found it:** keep it, with more confidence;

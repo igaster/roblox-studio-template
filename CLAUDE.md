@@ -49,6 +49,9 @@ game-agnostic and commit them in the framework repo, never together with game ch
 
 ```
 games/<name>/
+├── CLAUDE.md                    # this game's engineering notes (loads with this file)
+├── FRAMEWORK_FEEDBACK.md        # framework friction log (see *Framework friction*)
+├── .local/scratch/              # throwaway scripts (gitignored); docs never depend on them
 ├── game.json                    # name, title, placeId, universeId, framework commit
 ├── default.project.json         # Rojo: this game's src/ + the framework's src/shared
 ├── Makefile                     # includes ../../scripts/framework.mk
@@ -237,8 +240,8 @@ longer the chat runs, and usage limits run out fast.
 - **Editing files**: change files with the Edit tool (several Edit calls are fine) and create
   them with Write. Don't splice code with Python, `sed` or heredoc scripts: an anchor that
   matches twice, or misses on whitespace, silently edits the wrong place, and the shell guard
-  refuses many such commands. Throwaway scripts (a sweep, a probe) go in the scratchpad
-  directory, not `/tmp`.
+  refuses many such commands. Throwaway scripts (a sweep, a probe) go in the game's
+  `.local/scratch/`, not `/tmp`; a script the docs or tests rely on goes in `tests/sim/`.
 - **Code Quality**: Clear names, small focused functions (under 50 lines), consistent formatting, no deep nesting. Start new modules with `--!strict` where practical.
 - **DRY**: Extract common functionality into reusable modules. Avoid copy-paste.
 - **Comments**: Add comments for non-obvious logic, algorithms, or workarounds. Skip comments that just restate what the code does.

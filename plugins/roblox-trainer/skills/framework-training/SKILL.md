@@ -103,7 +103,7 @@ to `.ledger/` and `.training/` work in auto mode.
 7. If the run continues: `lead.py fresh <file>` with the owner's go-ahead for the next
    milestone (per the scenario policy), together with any queued maintainer requests. Fixes
    now in the tree are what the next milestone tests. `fresh` starts a new Lead conversation
-   that continues from the repo (`docs/STATUS.md`), as the Lead's own milestone-end report
+   that continues from the repo (`games/<name>/docs/STATUS.md`), as the Lead's own milestone-end report
    suggests: every step re-sends a conversation's whole history, so one kept across
    milestones burns usage limits. In a milestone with several checkpoints, go fresh at each
    checkpoint too. For a heavy task (above the plan's size rule, or a long sweep), you can
