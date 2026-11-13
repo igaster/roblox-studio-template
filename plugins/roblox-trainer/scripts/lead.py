@@ -33,7 +33,7 @@ Local records, all under .training/ (gitignored; the Lead is denied reading it):
   - lead.pid           marks a running call: "<lead.py pid> <claude process group>".
 Run with `python3 -I`. CLAUDE_BIN overrides the claude binary (the tests use a stub).
 """
-import datetime, json, os, signal, subprocess, sys
+import datetime, json, os, re, signal, subprocess, sys
 
 PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROFILE = os.path.join(PLUGIN, "permissions", "lead-profile.json")
@@ -188,6 +188,17 @@ def denied_paths(session, rules):
     return out
 
 
+def capture_dir(session):
+    """The game's project folder in the Claude config, where its sessions' tool-results/ (Studio
+    captures) land. As a working directory it lets the Lead cp a capture into docs/captures/;
+    allow rules can't, since cp's source must be inside a working directory (L-088 probe)."""
+    config = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
+    name = re.sub(r"[^A-Za-z0-9]", "-", os.path.realpath(session.game_dir()))
+    path = os.path.join(config, "projects", name)
+    os.makedirs(path, exist_ok=True)  # Claude Code creates it on the first session anyway
+    return path
+
+
 def claude_args(session, extra):
     """In a games/<name> session the Lead runs in the game folder: the framework plugin brings
     the skills, the framework root is an added directory (game sessions may edit framework
@@ -196,7 +207,8 @@ def claude_args(session, extra):
     root = session.root
     game = bool(session.state().get("gameDir"))
     plugin = os.path.join(root, "plugins", "roblox-framework")
-    layout = (["--plugin-dir", plugin, "--add-dir", root] if game and os.path.isdir(plugin) else [])
+    layout = (["--plugin-dir", plugin, "--add-dir", root, "--add-dir", capture_dir(session)]
+              if game and os.path.isdir(plugin) else [])
     return ([os.environ.get("CLAUDE_BIN", "claude"), "-p", *extra, *layout,
              "--output-format", "stream-json", "--verbose", "--settings", hook_settings(root),
              "--mcp-config", os.path.join(root, ".mcp.json"), "--strict-mcp-config",

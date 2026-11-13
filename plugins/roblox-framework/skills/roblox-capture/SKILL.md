@@ -33,10 +33,13 @@ looking at the Studio window. Requires MCP set up and Studio open — see
    a client camera set to `Scriptable` and aimed by script is ignored. To stage a view in
    Play, move the character (`PivotTo`) so the default camera frames it. If that can't show
    it, prove the state by reading attributes or properties instead.
-4. **Save.** Write the image to a reviewable path — default to the caller's
-   scratchpad directory, or `docs/captures/<name>.png` if the user wants it kept
-   in the repo for reference (ask if unclear; don't commit binary captures without
-   confirmation).
+4. **Save.** Claude Code stores the captured image under its config folder, in this game's
+   project folder (`…/projects/<game path>/<session>/tool-results/mcp-Roblox_Studio-blob-…jpg`;
+   the tool result names the file). That folder is one of the session's working directories
+   (`make claude` / the game's `settings.local.json` add it), so copy it with a plain
+   `cp "<that path>" docs/captures/<name>.jpg` — one `cp` per command, not chained. Keep it in
+   the scratchpad instead if it's only for a quick look. Don't commit binary captures without
+   confirmation.
 5. **Clean up.** If a scratch instance was created in step 1, destroy it
    (`inst:Destroy()` via `execute_luau`) so repeated captures don't accumulate
    leftover instances in `AgentScratch`.

@@ -130,7 +130,9 @@ class GamesLayoutTest(TempCase):
                                 f'echo "$FRAMEWORK_DRIVER" >> {cwd}\n'
                                 'echo \'{"type":"result","session_id":"s-1","result":"ok"}\'\n')
         write(self.tmp, "brief.txt", "brief")
-        run(py("lead.py") + ["start", os.path.join(self.tmp, "brief.txt")], self.r, env={"CLAUDE_BIN": claude})
+        config = os.path.join(self.tmp, "config")  # never the real ~/.claude
+        run(py("lead.py") + ["start", os.path.join(self.tmp, "brief.txt")], self.r,
+            env={"CLAUDE_BIN": claude, "CLAUDE_CONFIG_DIR": config})
         where, driver = slurp(cwd).split("\n")[:2]
         root = os.path.realpath(self.r)
         self.assertEqual(where, os.path.join(root, "games", "alpha"))
@@ -138,7 +140,12 @@ class GamesLayoutTest(TempCase):
         argv = slurp(args).split("\n")
         self.assertEqual(argv[argv.index("--plugin-dir") + 1],
                          os.path.join(root, "plugins", "roblox-framework"))
-        self.assertEqual(argv[argv.index("--add-dir") + 1], root)
+        added = [argv[i + 1] for i, a in enumerate(argv) if a == "--add-dir"]
+        captures = os.path.join(config, "projects",
+                                os.path.join(root, "games", "alpha").replace("/", "-").replace(".", "-")
+                                .replace("_", "-"))
+        self.assertEqual(added, [root, captures], "framework root + the game's capture folder (L-088)")
+        self.assertTrue(os.path.isdir(captures))
         self.assertEqual(argv[argv.index("--mcp-config") + 1], os.path.join(root, ".mcp.json"))
         self.assertIn(f"Read(/{root}/.training/**)", argv, "profile denials made absolute")
         self.assertIn(f"Read(/{os.path.join(root, 'games', 'beta')}/**)", argv, "other games denied")
