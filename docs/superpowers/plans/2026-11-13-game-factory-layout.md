@@ -143,6 +143,26 @@ packaged as `plugins/roblox-framework`).
       settings didn't load headless.
 - [ ] Interactive only: a SessionStart hook's `systemMessage` shows on the start screen (Phase 4b).
 
+### Phases 1–3: DONE 2026-11-13 (92b6874, 29b40e0, b8c32ab)
+Checked: a game made by `new-game` passes Tier 1 (50/0), builds with Rojo, `make verify` names
+it; a game session reads framework files, is denied `.training/`, and loads
+`roblox-framework:*` skills; trainer tests 24/24. Changes against the steps below:
+- **No `@import` in the game's `CLAUDE.md`:** the framework's `CLAUDE.md` already loads from the
+  parent folder (Phase 0), so the template's `CLAUDE.md` holds only game notes.
+- **Framework root access:** `game-local.sh` writes `settings.local.json` with the framework
+  root in `permissions.additionalDirectories` (without it every framework read asked first)
+  plus the `.training/` and other-games denies. `.ledger/` is not denied (Q2: framework edits
+  allowed); revisit if a game session starts writing cards.
+- **superpowers** is no longer enabled in project settings: it was installed for the root's
+  project only, so a game folder warned. The framework treats it as optional;
+  `roblox-initialize` now says to install it at user scope. Phase 5: does the Lead need it?
+- `docs/design/README.md` moved into `template/` (it describes a game's design folder).
+- `tests/framework.lua` checks stay at the function's top level (not re-indented).
+- CI checks a game made fresh from `template/` (new-game, then test and Rojo build).
+- `bootstrap` checks `lune --version` (the root has no game to test).
+- Not done yet: the root's `make` forwards to `.local/active-game`, which nothing writes until
+  `/start` (Phase 4b).
+
 ### Phase 1: Framework as a plugin
 - [ ] Move `.claude/{skills,agents,commands,hooks}` → `plugins/roblox-framework/`; add
       `.claude-plugin/plugin.json`; list it in `.claude-plugin/marketplace.json`.
