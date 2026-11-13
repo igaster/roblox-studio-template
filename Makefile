@@ -1,24 +1,19 @@
-.PHONY: serve test test-all balance sim verify
+# Framework root. Games live in games/<name>/, each with its own Makefile (make serve, test,
+# claude… run from the game folder). From here, GAME=<name> (or the active game in
+# .local/active-game) forwards those commands to that game.
+.PHONY: new-game games serve test test-all balance sim verify claude
 
-# Rokit installs tools in ~/.rokit/bin; fall back to it when a shell's PATH lacks it.
-LUNE ?= $(shell command -v lune 2>/dev/null || echo $(HOME)/.rokit/bin/lune)
-ROJO ?= $(shell command -v rojo 2>/dev/null || echo $(HOME)/.rokit/bin/rojo)
-export LUNE # tests/lib/balance/Parallel starts worker processes with it
+GAME ?= $(shell cat .local/active-game 2>/dev/null)
 
-serve: ## Start Rojo server
-	$(ROJO) serve default.project.json
+new-game: ## Create games/$(NAME) from template/ (its own git repo; nothing committed)
+	@bash scripts/new-game.sh $(NAME)
 
-test: ## Run headless Lune unit tests, skipping *.slow.spec.lua (ARGS=--verbose prints every passing check)
-	$(LUNE) run tests/run.lua $(ARGS)
+games: ## List the games
+	@ls -1 games 2>/dev/null || echo "No games yet: make new-game NAME=<kebab-case-name>"
 
-test-all: ## Run every Lune test, including slow simulation specs
-	$(LUNE) run tests/run.lua --slow $(ARGS)
-
-balance: ## Run the game's balance report against its baseline, if it has one (tests/sim/eval.lua --check); flags via ARGS="..."
-	@if [ -f tests/sim/eval.lua ]; then $(LUNE) run tests/sim/eval.lua --check $(ARGS); \
-	else echo "No balance report yet (tests/sim/eval.lua): see the roblox-game-modeling skill."; fi
-
-sim: balance ## Old name of balance
+serve test test-all balance sim claude:
+	@if [ -z "$(GAME)" ]; then echo "Which game? make $@ GAME=<name> (see: make games)"; exit 1; fi
+	@$(MAKE) --no-print-directory -C games/$(GAME) $@
 
 verify: ## Check toolchain, Rojo server and Studio connection
 	@bash scripts/verify.sh

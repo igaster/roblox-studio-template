@@ -13,11 +13,14 @@
         "$path": "src/game/ReplicatedStorage/Classes"
       },
       "Shared": {
-        "$path": "src/shared"
+        "$path": "../../src/shared"
       }
     },
     "ServerScriptService": {
-      "$path": "src/game/ServerScriptService"
+      "$path": "src/game/ServerScriptService",
+      "FrameworkSmokeTest": {
+        "$path": "../../src/framework/FrameworkSmokeTest.lua"
+      }
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {

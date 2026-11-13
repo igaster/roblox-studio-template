@@ -1,8 +1,17 @@
 --!strict
 -- The framework's own headless checks (framework file; games don't edit it).
--- They hold for every game built on this template. Game tests go in tests/specs/ (see run.lua).
+-- They hold for every game built on this template. Game tests go in the game's tests/specs/
+-- (see runner.lua). Called by the runner with the game's GameConfig loader; the checks below
+-- stay at the top level of the function (not re-indented) to keep their history readable.
 
 local H = require("./harness")
+local process = require("@lune/process")
+
+-- The framework root as seen from the working directory (the game root): set by
+-- scripts/framework.mk; games live two folders down.
+local FRAMEWORK_ROOT = process.env.FRAMEWORK_ROOT or "../.."
+
+return function(requireGameConfig: () -> any)
 
 -- ---- GameConfig is plain Lua ----------------------------------------------
 -- GameConfig must load under Lune and contain only plain values, so every config value
@@ -10,7 +19,7 @@ local H = require("./harness")
 -- with Shared/ConfigTypes at the point of use.
 H.section("GameConfig is plain Lua")
 do
-	local ok, GameConfig = pcall(require, "../src/game/ReplicatedStorage/GameConfig")
+	local ok, GameConfig = pcall(requireGameConfig)
 	H.check("GameConfig loads under Lune (no Vector3/Color3/Enum at load time)", ok)
 
 	local PLAIN = { number = true, string = true, boolean = true, table = true }
@@ -139,12 +148,13 @@ do
 			end
 		end
 	end
-	walk("src")
+	walk("src") -- the game's code
+	walk(FRAMEWORK_ROOT .. "/src") -- the framework's (shared modules, FrameworkSmokeTest)
 	H.check(count .. " files checked", count > 0)
 end
 
 -- ---- Balance toolkit (tests/lib/balance, roblox-game-modeling skill) -----------
 H.section("Balance toolkit")
-require("./lib/balance/BalanceLib.spec")(H)
+require("./lib/balance/BalanceLib.spec")(H, FRAMEWORK_ROOT)
 
-return nil
+end

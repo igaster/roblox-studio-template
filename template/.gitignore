@@ -1,0 +1,15 @@
+# Machine-local: place files, sourcemap, logs, session registry
+/.local/
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
+sourcemap.json
+
+# Personal Claude Code settings (MCP approvals; framework paths written by scripts/game-local.sh)
+.claude/settings.local.json
+
+# Plan-execution scratch created by the superpowers plugin
+.superpowers/
+
+.DS_Store

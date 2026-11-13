@@ -28,3 +28,10 @@ sourcemap.json
 
 # Python bytecode (trainer scripts)
 __pycache__/
+
+# Games: each games/<name>/ is its own git repo (scripts/new-game.sh); the framework repo
+# never tracks them
+/games/
+
+# Per-clone framework-root state (active game, last visit)
+/.local/

@@ -6,7 +6,7 @@ local Baseline = require("./Baseline")
 local Claims = require("./Claims")
 local Parallel = require("./Parallel")
 
-return function(t)
+return function(t, frameworkRoot: string)
 	local matrix = Scenario.matrix({ { name = "level", values = { "A", "B" } }, { name = "players", values = { 1, 2 } } })
 	t.eq("Scenario.matrix: every combination", #matrix, 4)
 	t.eq("Scenario.id: stable and sorted", Scenario.id({ players = 2, level = "A" }), "level=A players=2")
@@ -49,7 +49,8 @@ return function(t)
 	t.check("Claims: targets are checked, known gaps reported", checked == 1 and #gaps == 1 and gaps[1]:find("known gap") ~= nil)
 
 	local jobs = { { value = 1 }, { value = 2 }, { value = 3 } }
-	local doubled = Parallel.lune("tests/lib/balance/testdata/double.lua", jobs, 2, function(job)
+	-- Worker paths are relative to the working directory (the game root), hence the prefix.
+	local doubled = Parallel.lune(frameworkRoot .. "/tests/lib/balance/testdata/double.lua", jobs, 2, function(job)
 		return job.value
 	end)
 	t.check("Parallel.lune: results in job order", doubled[1].value == 2 and doubled[2].value == 4 and doubled[3].value == 6)
