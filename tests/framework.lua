@@ -126,6 +126,47 @@ do
 	H.near("the tighter axis wins", LayoutMath.uiScale(1, 2000, 270, 960, 540), 0.5)
 end
 
+-- ---- MockDataStore (src/framework) and the store contract ------------------------
+-- The mock must behave like the real DataStore on everything the contract lists
+-- (src/framework/StoreContract.lua); FrameworkSmokeTest runs the same cases in-engine.
+H.section("MockDataStore follows the store contract")
+do
+	local MockDataStore = require("../src/framework/MockDataStore")
+	local StoreContract = require("../src/framework/StoreContract")
+	StoreContract.basic(MockDataStore.new, H)
+	StoreContract.faults(MockDataStore.new, H)
+
+	local service = MockDataStore.newService()
+	H.check("the service stand-in gives the same store for the same name", service:GetDataStore("A") == service:GetDataStore("A"))
+	H.check("the service stand-in separates names", service:GetDataStore("A") ~= service:GetDataStore("B"))
+	H.check("the service stand-in says it is a mock", service.IsMock == true)
+	H.check("newForStudio refuses to run outside Studio", not pcall(MockDataStore.newForStudio))
+end
+
+-- The mock is a development tool: only a game's DataService (its Studio fallback), its Tier 2
+-- SmokeTest and its tests/ may use it. Anything else requiring it could ship fake storage to
+-- real players.
+H.section("MockDataStore is not used outside DataService, SmokeTest and tests")
+do
+	local fs = require("@lune/fs")
+	local allowed = { ["DataService.lua"] = true, ["SmokeTest.lua"] = true }
+	local offenders: { string } = {}
+	local function walk(dir: string)
+		for _, name in ipairs(fs.readDir(dir)) do
+			local path = dir .. "/" .. name
+			if fs.isDir(path) then
+				walk(path)
+			elseif string.match(name, "%.luau?$") and not allowed[name] then
+				if string.find(fs.readFile(path), "MockDataStore", 1, true) then
+					table.insert(offenders, path)
+				end
+			end
+		end
+	end
+	walk("src")
+	H.check("only DataService.lua and SmokeTest.lua mention MockDataStore (found: " .. table.concat(offenders, ", ") .. ")", #offenders == 0)
+end
+
 -- ---- Every source file compiles ------------------------------------------------
 -- Studio-only code (services, controllers, generators) never runs under Lune, so this is
 -- the only headless check that catches a syntax error in it before Studio does.

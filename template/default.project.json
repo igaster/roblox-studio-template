@@ -20,6 +20,12 @@
       "$path": "src/game/ServerScriptService",
       "FrameworkSmokeTest": {
         "$path": "../../src/framework/FrameworkSmokeTest.lua"
+      },
+      "MockDataStore": {
+        "$path": "../../src/framework/MockDataStore.lua"
+      },
+      "StoreContract": {
+        "$path": "../../src/framework/StoreContract.lua"
       }
     },
     "StarterPlayer": {

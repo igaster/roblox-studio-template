@@ -199,6 +199,22 @@ function FrameworkSmokeTest.run(): boolean
 	check("greybox: marker invisible and non-colliding", m.Transparency == 1 and not m.CanCollide and not m.CanQuery)
 	folder:Destroy()
 
+	-- MockDataStore: the same store-contract cases Lune runs (tests/framework.lua), here on the
+	-- engine's Luau, so a difference between the two shows up.
+	local MockDataStore = require(script.Parent.MockDataStore)
+	local StoreContract = require(script.Parent.StoreContract)
+	local contractHarness = {
+		check = function(name: string, cond: boolean)
+			check("store contract: " .. name, cond)
+		end,
+		eq = function(name: string, actual: any, expected: any)
+			check("store contract: " .. name, actual == expected)
+		end,
+	}
+	StoreContract.basic(MockDataStore.new, contractHarness)
+	StoreContract.faults(MockDataStore.new, contractHarness)
+	check("mock store: newForStudio works in Studio", pcall(MockDataStore.newForStudio))
+
 	holder:Destroy()
 	holderA:Destroy()
 	print(string.format("=== %d passed, %d failed ===", passed, failed))
