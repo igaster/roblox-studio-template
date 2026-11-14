@@ -193,6 +193,15 @@ measures it at several window sizes, UI scales and game phases:
   The HUD controller sets `UIScale.Scale = LayoutMath.uiScale(step, w, h, minW, minH)` and
   `Root.Size = UDim2.fromScale(1 / scale, 1 / scale)`, so the player's UI-scale step applies
   on large windows and small windows shrink the HUD instead of overlapping it.
+- **Stay clear of Roblox's own UI.** Set `ScreenGui.IgnoreGuiInset = false`, so the HUD starts
+  below the top bar (its menu, chat and logo buttons sit in the top-left, and the player list in
+  the top-right); a HUD that ignores the inset has its top-left elements hidden behind them, and
+  the capture tool does not draw Roblox's buttons, so a screenshot won't show it. Keep important
+  readouts out of the top-right while the player list is on. Compute the UI scale from the
+  `ScreenGui`'s `AbsoluteSize` (the usable area), not the camera's `ViewportSize`.
+- **Modals switch world prompts off.** While a modal panel is open, set
+  `ProximityPromptService.Enabled = false` (and back on when the last modal closes): prompts draw
+  through a translucent panel and can be triggered from behind it.
 - **Worst-case text.** A label whose text varies sets the attribute `LayoutSample` to its
   longest realistic text (`"$99,999"`, `"Level 120"`). The check fills these before
   measuring, since an empty label hides overflow.
