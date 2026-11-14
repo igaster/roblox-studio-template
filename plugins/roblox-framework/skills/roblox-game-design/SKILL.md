@@ -148,6 +148,9 @@ Treat a tuning request as a symptom. Before changing a number:
 5. **If the question is about consequences** ("what does +20 % damage do later on", "can
    players afford the second upgrade in time"), or the game keeps a balance model, use
    `roblox-game-modeling`: a simulation answers in seconds what a playtest answers in an hour.
+6. **Plan the pass.** A tuning request that touches several numbers becomes a milestone
+   (`templates/milestone-catalog.md`, G15) or a *Tuning task* in the current plan, and follows
+   its ladder: claims, then simulation, then recorded sessions, then the owner's playtest.
 
 Monetization requests also go through `references/economy.md` → *Monetization*: no
 pay-to-win against other players, and look up current policy via context7 (`/roblox/creator-docs`).

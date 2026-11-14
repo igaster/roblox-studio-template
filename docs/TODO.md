@@ -2,6 +2,17 @@
 
 Deferred work, newest first. Each item links to the design that describes it.
 
+## Feed recorded play sessions into the balance simulation
+
+Status: idea (2026-11-14), not designed. The tuning ladder (`milestone-catalog.md`, G15) has a
+rung that compares `SessionRecorder` exports with the simulation, but today that is done by
+hand: recordings are read, not replayed, and the balance toolkit only replays its own decisions
+(to check itself). Candidate: a `tests/lib/balance` module that turns a recording into a
+persona or a per-stage pacing summary and diffs it against the simulation's metrics, with the
+recording's config stamp checked against the current `GameConfig`. Before building, read a
+game's own `tests/sim/` adapter (Clockwork Keep has the most mature one) to see what already
+exists, and build it when a second game needs the comparison.
+
 ## Cross-server session lock: wrap ProfileStore or build our own (L-030)
 
 Status: evaluated 2026-11-14, not decided. `MockDataStore` and `StoreContract` exist
@@ -20,8 +31,9 @@ Status: scheduled (2026-11-14). `docs/design/templates/milestone.md`, `milestone
 `milestone-catalog.md` (new) were drafted from Clockwork Keep's plans and Driftbloom M1, before any game used them.
 Driftbloom M2 is the first milestone planned from them. When M2 closes, compare the plan as
 written with what happened: unused sections, missing ones, whether the checkpoints and the
-rules block helped, whether `Check-ins` in the GDD template was used, and which catalog entries the Lead kept,
-merged or skipped (and whether any verdict was missing). Fix the templates and the
+rules block helped, whether `Check-ins` in the GDD template was used, which catalog entries the Lead kept,
+merged or skipped (and whether any verdict was missing), and whether the tuning ladder (G15, the
+plan's *Tuning task*, the milestone's *Targets*) was used or ignored. Fix the templates and the
 `roblox-game-design` skill's stage 2 and 4 text, in one `framework:` commit.
 
 ## Multiplayer test bot

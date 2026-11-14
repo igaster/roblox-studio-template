@@ -43,6 +43,23 @@ with the owner if the GDD's *Owner involvement* asks for it, then start a new ch
 - **Satisfies:**
 - **Result:**
 
+## Tuning task (copy when the milestone moves numbers)
+Use the ladder from `milestone-catalog.md`, G15, cheapest rung first; stop when the answer is
+clear. Size it to one chat; a long sweep is one script printing one table (`CLAUDE.md`,
+*Working economically*).
+- **Skills:** `roblox-game-design` (tuning diagnosis), `roblox-game-modeling`, `roblox-test`,
+  `roblox-playtest` (recordings)
+- **Files:**
+  - [ ] Diagnosis written down: the player problem, the source and sink, the one knob
+  - [ ] `GameConfig.<Key>` changed (only the knob), the design-target checks updated or added
+  - [ ] `make balance` run before and after; baseline diff reviewed, claims updated
+  - [ ] Recorded sessions exported (stamped with the config) and compared, if the milestone
+    asks for them
+  - [ ] Before and after table in the *Result*; the decision in `docs/decisions/`
+- **Satisfies:** the DT IDs the milestone lists under *Targets*.
+- **Result:** the table (knob, before, after, reason), the claims that moved, what the
+  recordings showed, and what waits on the owner's playtest.
+
 ## Closing the milestone
 
 - [ ] Every acceptance criterion has a check (named by its ID) and evidence in the spec's

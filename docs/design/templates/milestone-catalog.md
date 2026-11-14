@@ -24,7 +24,10 @@ Each entry: **Fits when**, **Question**, **Typical criteria** (with how each is 
 - **Question:** is the riskiest assumption fun? The smallest playable test: greybox, one of each
   thing, no monetization, no persistence unless the loop needs it.
 - **Typical criteria:** the full loop works in a Play session (`[playtest]`); the design targets
-  hold (Tier 1); the smoke test passes (Tier 2).
+  hold (Tier 1); the smoke test passes (Tier 2); **everything the player holds is visible on
+  screen** (coins, seeds, items, harvested goods: read off the HUD in a Play session, not
+  inferred from events), and **a player can never be stuck with no way to earn** (Tier 1: a
+  state with nothing left is rescued or impossible).
 - **Depends on:** nothing.
 - **Skip if:** never.
 - **Placeholder rules (every milestone until its G7 pass):** build so that polish later changes
@@ -176,6 +179,51 @@ milestone that still changes the screens (content, retention).
   store (`tests/framework.lua` checks); no external players before G9 passed.
 - **Depends on:** G9.
 - **Skip if:** the game is a private test bed.
+
+## G14: Owner-requested feature or quality-of-life change
+- **Fits when:** the loop is proven and the owner (or a playtest) asks for something that is
+  not a new content type or polish pass: speed controls, free placement, a results report, a
+  new upgrade sink. These come one at a time and make up a large share of a long-running game.
+- **Question:** does this change what the player does, in the way the owner expects, without
+  breaking the numbers other systems rely on?
+- **Typical criteria:** the request is restated as one or two acceptance criteria the owner
+  confirms (`[playtest]`); no gameplay number moves unless the spec says so (a balance run
+  reports zero changed values, Tier 1); the HUD shows anything new the player holds or can do
+  (see G1); a feature spec exists even when the milestone is small.
+- **Depends on:** G1; whatever the request touches.
+- **Skip if:** the request fits an existing milestone: fold it in instead of adding one.
+
+## G15: Tuning and balance pass
+- **Fits when:** numbers drive the experience (difficulty, progression, economy, pacing) and
+  content has stopped growing for now. Schedule it after content milestones (G3, G4, G5) and
+  before polish (G7) and monetization (G12), and again whenever a later milestone moves
+  numbers a lot. A small retune inside another milestone uses the same ladder as a task
+  (`milestone-plan.md`, *Tuning task*).
+- **Question:** do the design targets hold, and does a player at each stage meet the intended
+  pacing and difficulty, in the model and with real players?
+- **The ladder** (cheapest first; stop climbing when the answer is clear):
+  1. **Diagnose:** the player problem, the source and sink in the economy, the cost, one knob
+     in `GameConfig` (`roblox-game-design`, section C).
+  2. **Targets as claims:** every design target (DT ID) is a Tier 1 check over the `*Math`
+     modules and `GameConfig`, and every balance decision is a checkable claim citing where it
+     is recorded (`roblox-test`; `tests/lib/balance/Claims`).
+  3. **Model or simulation:** run scenarios over the matrix (level × difficulty × players ×
+     persona), read the outcome metrics, diff against the baseline (`roblox-game-modeling`;
+     `make balance`). Check the persona first if an option's ablation is negative.
+  4. **Recorded sessions:** play it, export `SessionRecorder` sessions stamped with the config,
+     and compare their pacing with the simulation's. Recordings show what happened, not why:
+     ask the player (`roblox-playtest`, *Recording sessions*).
+  5. **Owner playtest** for feel (`[playtest]`): the one thing the first four can't answer.
+  6. **Record it:** each decision as a claim and in `docs/decisions/`; baseline refreshed;
+     *Deferred checks* updated if a check needs a published place.
+- **Typical criteria:** every DT passes (Tier 1); `make balance` reports no failing claims and
+  the baseline diff is reviewed line by line (Tier 1); a table of before and after values for
+  each knob changed, with the reason; recorded sessions at each stage within the model's
+  tolerance, or the gap explained (`[playtest]`); the owner confirmed the feel at the
+  extremes (first session, a late stage, the hardest setting).
+- **Depends on:** G1; the content it tunes (G3, G4, G5).
+- **Skip if:** the game has no numbers to balance (outcomes don't reduce to numbers: say so in
+  the proposal), or the balance model's tools aren't built yet and one playtest answers it.
 
 ## Adding to the catalog
 

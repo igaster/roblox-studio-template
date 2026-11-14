@@ -18,6 +18,16 @@ For M1 this is usually: "The core loop is fun", tested with greybox art.
 The riskiest assumption this milestone tests, and how we'll know (a playtest
 observation, a `TestHooks` event, a number).
 
+## Targets
+
+Skip if the milestone moves no numbers. Otherwise list each design target it touches and the
+cheapest way each is checked (Tier 1 claim, simulation or `make balance`, recorded sessions, owner
+playtest). If numbers need tuning, plan a tuning task (`milestone-plan.md`) or a G15 milestone.
+
+| Target | Checked by |
+|---|---|
+| DT<n>: <statement> | Tier 1 / simulation / recording / playtest |
+
 ## Scope
 
 | Feature spec | Status |
