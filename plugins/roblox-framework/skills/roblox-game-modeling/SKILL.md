@@ -119,6 +119,7 @@ require it as `@framework/tests/lib/balance/<Module>`; worker scripts passed to
 | `Probe` | Probes from unit properties in config (armored, fast, clustered, …): a new property adds probes without code |
 | `Baseline` | Flat metric snapshot in the repo, and a diff against it |
 | `Claims` | Every design target and balance decision as a checkable claim with its source; known gaps are reported, not failed |
+| `Sessions` (`src/framework/`, runs in Studio and Lune) | Recorded play (agent, Studio, live) as evidence: digests a session into the game's own metrics inside Studio, loads and validates exports and digests, splits current from stale by config stamp, compares each metric's median with the model's value, and diffs two sets of digests (`roblox-playtest`, *Analysing recordings*) |
 
 `Parallel.lune(worker, jobs, limit, cost)` runs each job in its own Lune process (one per
 core, most expensive first), so a matrix of simulations takes about as long as its slowest

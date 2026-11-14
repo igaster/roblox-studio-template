@@ -2,16 +2,34 @@
 
 Deferred work, newest first. Each item links to the design that describes it.
 
-## Feed recorded play sessions into the balance simulation
+## Recorded play sessions for tuning: what is built, what is left
 
-Status: idea (2026-11-14), not designed. The tuning ladder (`milestone-catalog.md`, G15) has a
-rung that compares `SessionRecorder` exports with the simulation, but today that is done by
-hand: recordings are read, not replayed, and the balance toolkit only replays its own decisions
-(to check itself). Candidate: a `tests/lib/balance` module that turns a recording into a
-persona or a per-stage pacing summary and diffs it against the simulation's metrics, with the
-recording's config stamp checked against the current `GameConfig`. Before building, read a
-game's own `tests/sim/` adapter (Clockwork Keep has the most mature one) to see what already
-exists, and build it when a second game needs the comparison.
+Status: partly built (2026-11-14). **Built:** `SessionRecorder` tags every session with
+`schema`, `source` (agent, studio, live) and `configStamp` (`shared/ConfigStamp`, same stamp in
+Lune and in the engine, checked in `FrameworkSmokeTest`); `tests/lib/balance/Sessions` loads and
+validates exports, splits current from stale by stamp, filters by source, reads one session
+(`firstTime`, `count`, `summary`, `events`), and compares each metric's median with the model's
+value (`compare`); **digests** (`Sessions.digest`, `loadDigests`, `metric`, `diffDigests`): the
+game's own metrics computed inside Studio, a few hundred bytes per session, saved under
+`playtests/digests/` and compared across retunes (`Sessions` lives in `src/framework/`, so the
+engine can run it; checked in `FrameworkSmokeTest` and in Lune); the playtest skill documents the
+workflow and G15 rung 4 uses it. No game uses any of it yet.
+**Decision (2026-11-14, maintainer): no stored raw play runs.** Raw sessions stay in Studio's
+memory and are never saved wholesale: an agent saves the small digest instead, and exports raw
+JSON over MCP only for a short session (it passes through the agent's context, twice when written
+to a file). Not pursued, with the reasons, in case it is reopened: automatic export to a file (a
+Studio `HttpService` POST to a local Lune collector, which keeps the data out of any model's
+context but needs "Allow HTTP Requests" in the place and a running collector); reading the Output
+log from a subagent (works without setup, but the data passes through a model twice and copying
+needs a checksum check; Studio's log files on disk only appear after Studio restarts); live
+sessions from published servers (needs durable storage and a check of Roblox's data rules).
+**Left, if it is ever needed:**
+1. **A game adopts it.** Call `setConfig`, record the decisions its model also makes, write a
+   metrics map for `Sessions.compare`. The first game to do this decides what is missing. Read
+   Clockwork Keep's `tests/sim/` adapter first for what already exists.
+2. **Replay as a persona.** `Sessions.events(session, kind)` gives the decisions in order; a
+   game's adapter can feed them to its simulation to check that the model reproduces the run.
+   Build the shared helper when a second game needs it.
 
 ## Cross-server session lock: wrap ProfileStore or build our own (L-030)
 

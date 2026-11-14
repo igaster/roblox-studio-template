@@ -169,6 +169,7 @@ function FrameworkSmokeTest.run(): boolean
 		recHolder.Name = "FrameworkSmokeRecorder"
 		recHolder.Parent = ServerStorage
 		ReplicatedStorage.Shared.ServerBridge:Clone().Parent = recHolder
+		ReplicatedStorage.Shared.ConfigStamp:Clone().Parent = recHolder
 		local copy = ReplicatedStorage.Shared.SessionRecorder:Clone()
 		copy.Parent = recHolder
 		return require(copy), recHolder
@@ -183,6 +184,24 @@ function FrameworkSmokeTest.run(): boolean
 	local last = sessions[#sessions]
 	check("sessions: another copy sees the finished session", last ~= nil and last.id == id and #last.events == 1)
 	check("sessions: exportJson is JSON", string.sub(recB.exportJson(false), 1, 1) == "[")
+	check("sessions: meta has the schema version", last.meta.schema == recA.SCHEMA)
+	check("sessions: source defaults to studio when a human plays in Studio", last.meta.source == "studio")
+	check("sessions: no stamp until setConfig is called", last.meta.configStamp == nil)
+	-- The stamp must match what Lune computes for the same config (tests/lib/balance).
+	local stamp = recA.setConfig({ Speed = 4, Name = "x", Waves = { 1, 2, 3 }, Nested = { B = 2, A = 1 } })
+	check("config stamp: the engine computes the same stamp as Lune", stamp == "69814000")
+	workspace:SetAttribute("PlaytestSource", "agent")
+	local stampedId = recA.start({ smoke = true })
+	recA.finish({})
+	workspace:SetAttribute("PlaytestSource", nil)
+	local stamped
+	for _, s in ipairs(recB.sessions(false)) do
+		if s.id == stampedId then
+			stamped = s
+		end
+	end
+	check("sessions: the PlaytestSource attribute sets the source", stamped ~= nil and stamped.meta.source == "agent")
+	check("sessions: setConfig stamps later sessions", stamped ~= nil and stamped.meta.configStamp == "69814000")
 	recHolderA:Destroy()
 	recHolderB:Destroy()
 	local bridge = ServerStorage:FindFirstChild("SessionRecorderBridge")
@@ -214,6 +233,29 @@ function FrameworkSmokeTest.run(): boolean
 	StoreContract.basic(MockDataStore.new, contractHarness)
 	StoreContract.faults(MockDataStore.new, contractHarness)
 	check("mock store: newForStudio works in Studio", pcall(MockDataStore.newForStudio))
+
+	-- Sessions digest: computed in the engine, where the recording is, with the game's metrics.
+	-- The same numbers Lune computes for the same session (tests/lib/balance/BalanceLib.spec).
+	local Sessions = require(script.Parent.Sessions)
+	local sample = {
+		id = "smoke-1",
+		meta = { schema = 1, source = "studio", configStamp = "abc" },
+		events = { { t = 1, kind = "start", data = {} }, { t = 40, kind = "buy", data = { item = "Sword" } } },
+		summary = { lastRound = 12 },
+		durationSeconds = 90,
+	}
+	local digests = Sessions.digest({ sample }, {
+		firstBuy = function(s)
+			return Sessions.firstTime(s, "buy")
+		end,
+		lastRound = function(s)
+			return Sessions.summary(s, "lastRound")
+		end,
+	})
+	check("sessions digest: the engine computes the game's metrics", digests[1].metrics.firstBuy == 40 and digests[1].metrics.lastRound == 12)
+	check("sessions digest: the envelope and meta are kept", digests[1].digestSchema == Sessions.DIGEST_SCHEMA and digests[1].meta.configStamp == "abc" and digests[1].durationSeconds == 90)
+	check("sessions digest: it is valid and JSON-encodable", #Sessions.validateDigest(digests[1]) == 0 and #game:GetService("HttpService"):JSONEncode(digests) < 500)
+	check("sessions digest: compare reads digests", Sessions.compare(digests, { firstBuy = Sessions.metric("firstBuy") }, { firstBuy = 40 }, 0.1)[1].ok == true)
 
 	holder:Destroy()
 	holderA:Destroy()

@@ -281,9 +281,13 @@ milestone that still changes the screens (content, retention).
   3. **Model or simulation:** run scenarios over the matrix (level × difficulty × players ×
      persona), read the outcome metrics, diff against the baseline (`roblox-game-modeling`;
      `make balance`). Check the persona first if an option's ablation is negative.
-  4. **Recorded sessions:** play it, export `SessionRecorder` sessions stamped with the config,
-     and compare their pacing with the simulation's. Recordings show what happened, not why:
-     ask the player (`roblox-playtest`, *Recording sessions*).
+  4. **Recorded sessions:** play it (an agent run with `PlaytestSource = "agent"`, then a human
+     run in Studio), compute a digest of the `SessionRecorder` sessions in Studio with the game's
+     own metrics (a few numbers per session, so no raw events cross MCP), save it under
+     `playtests/digests/`, and compare the medians with the model's values using
+     `Sessions.compare` (sessions with a stale config stamp are left out and reported;
+     `Sessions.diffDigests` shows what a retune moved). Recordings show what happened, not why: ask the player
+     (`roblox-playtest`, *Recording sessions* and *Analysing recordings*).
   5. **Owner playtest** for feel (`[playtest]`): the one thing the first four can't answer.
   6. **Record it:** each decision as a claim and in `docs/decisions/`; baseline refreshed;
      *Deferred checks* updated if a check needs a published place.

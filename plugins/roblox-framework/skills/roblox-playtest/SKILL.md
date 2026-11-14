@@ -206,16 +206,74 @@ in server memory. **Stopping Play loses them**, so export before that:
 
 - While the user plays and you monitor, poll the game's phase attribute. When the run ends
   (or the user says they're done), export at once via `execute_luau` on the **Server**
-  datamodel:
+  datamodel. **Prefer the digest** (see *Analysing recordings*): a few numbers per session
+  computed in Studio, small enough to read and save. The raw export puts every event through
+  your context (a long session can be 100k tokens, twice if you then write it to a file), so
+  use it only for a short session or when you need the events:
   ```lua
-  return require(game.ReplicatedStorage.Shared.SessionRecorder).exportJson(true) -- true: include the unfinished one
+  return require(game.ReplicatedStorage.Shared.SessionRecorder).exportJson(true) -- raw: true includes the unfinished one
   ```
-- Save the returned JSON in the repo where the game keeps recordings (e.g.
-  `playtests/sessions/`), and stamp it with the config it was played under, so a later
-  comparison doesn't mix configs.
+- Save what you export in the repo: digests in `playtests/digests/<source>-<stamp>-<date>.json`,
+  raw sessions (if you must) in `playtests/sessions/<source>-<date>-<n>.json`. The game's choice
+  of folders is fine if it says so in `docs/TESTING.md`.
+- **Every session carries `meta.schema`, `meta.source` and `meta.configStamp`** (added by the
+  recorder; the game calls `SessionRecorder.setConfig(GameConfig)` once at startup):
+  - `source` is `agent` for a scripted or MCP-driven run, `studio` for a human in Studio,
+    `live` for a real player on a published server. **Before an agent run, set
+    `workspace:SetAttribute("PlaytestSource", "agent")`** on the Server datamodel, and clear
+    it afterwards; otherwise the run is tagged `studio`.
+  - `configStamp` fingerprints the config the session was played under. After a retune, only
+    sessions with the current stamp are evidence about the current numbers.
 - Record only plain data (no Instances), so it survives JSON and the bridge between module
-  copies.
+  copies. Record decisions and per-round milestones with stable kind names (`buy`, `place`,
+  `wave`), and put the game's own description of the run in `meta` (stage, difficulty, players).
 - Recordings show what happened, not why: ask the player before acting on one.
+
+### Analysing recordings (tuning evidence)
+
+`Sessions` (`src/framework/Sessions.lua`: `ServerScriptService.Sessions` in Studio,
+`@framework/src/framework/Sessions` in Lune) works on two kinds of data: **sessions** (the
+events the recorder holds) and **digests** (a few numbers per session, computed by the game's
+metrics). Compute the digest where the recording is, in Studio, so only the small result
+crosses MCP:
+
+1. **The game owns its metrics.** A pure module, e.g. `Modules/SessionMetrics.lua`, returns
+   `{ firstBuy = function(s) return Sessions.firstTime(s, "buy") end, lastRound = function(s)
+   return Sessions.summary(s, "lastRound") end, ... }`: any name and any function over a
+   session. It runs in Studio and in Lune, so it is tested in Tier 1. Choose the metrics up
+   front: a digest can't answer a question about something it didn't keep. Optional extras, also
+   the game's: `series` (per-round arrays, so a later "how did round 7 go" is still answerable)
+   and `extra` (a short list of key decisions, a stage name).
+2. **Digest in Studio** (Server datamodel, over MCP):
+   ```lua
+   local Sessions = require(game.ServerScriptService.Sessions)
+   local metrics = require(game.ReplicatedStorage.Modules.SessionMetrics)
+   local SessionRecorder = require(game.ReplicatedStorage.Shared.SessionRecorder)
+   return game:GetService("HttpService"):JSONEncode(Sessions.digest(SessionRecorder.sessions(true), metrics))
+   ```
+   A few hundred bytes per session: read it, save it under `playtests/digests/`.
+3. **Analyse in Lune:**
+   ```lua
+   local Sessions = require("@framework/src/framework/Sessions")
+   local ConfigStamp = require("@framework/src/shared/ConfigStamp")
+   local digests, rejected = Sessions.loadDigests(fs.readFile("playtests/digests/studio-run1.json"))
+   local current, stale = Sessions.byStamp(digests, ConfigStamp.of(GameConfig))
+   local lines = Sessions.compare(Sessions.filter(current, { source = "studio" }), {
+   	firstBuy = Sessions.metric("firstBuy"),
+   	lastRound = Sessions.metric("lastRound"),
+   }, { firstBuy = 42, lastRound = 14 }, 0.25) -- the model's values, and the tolerance
+   -- Before against after a retune: Sessions.diffDigests(oldDigests, newDigests)
+   ```
+   Raw exports work the same way (`Sessions.load`, and `Sessions.firstTime` etc. as the
+   metrics); `Sessions.events(session, kind)` returns the decisions in order, for a game's own
+   adapter to turn into a scripted persona.
+
+Use it in the tuning ladder (`milestone-catalog.md`, G15, rung 4): report rejected and stale
+sessions, compare agent runs, Studio runs and (later) live runs separately, and treat a
+mismatch as a question for the player or the persona, not as a verdict. A handful of sessions
+shows gross mismatches only. Each game decides its metrics, model values, tolerances and
+`meta`; the framework fixes only the digest envelope (`digestSchema`, `id`, `meta`,
+`durationSeconds`, `metrics`) and the checks.
 
 It shares its state across `require` copies through `Shared.ServerBridge` (a
 BindableFunction), so this export fails when `execute_luau` is sandboxed. Then register

@@ -26,6 +26,9 @@
       },
       "StoreContract": {
         "$path": "../../src/framework/StoreContract.lua"
+      },
+      "Sessions": {
+        "$path": "../../src/framework/Sessions.lua"
       }
     },
     "StarterPlayer": {
