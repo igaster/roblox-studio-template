@@ -71,7 +71,11 @@ to confirm or edit each. Without a teardown, ask one at a time; offer examples f
 Read `../../docs/design/templates/milestone-catalog.md` first: give every entry a one-line
 verdict (fits, merges into M<n>, or skip with a reason) and keep its ID (`G3`) in the GDD's
 *Milestones* row. The catalog is a menu; add any milestone the game needs that isn't there.
-Order: dependencies first, then the riskiest assumption, then content, then monetization.
+Each entry has a **Kind**: start from the *required* ones, add the *conditional* ones the
+game's nature calls for, then the *optional* ones that serve its goals, and check a skipped
+entry's *Skipping it affects* line. Order them by the catalog's *Typical order*, adjusted for
+dependencies and the riskiest assumption (dependencies first, then risk, then content, tuning
+before polish, monetization last).
 **M1 = the smallest playable test of the riskiest assumption**: greybox art, one of each
 thing, no monetization, no persistence unless the loop needs it. Present as a short list
 (milestone, goal, features); later milestones stay one line each.
