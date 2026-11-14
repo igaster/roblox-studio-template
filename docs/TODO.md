@@ -2,6 +2,28 @@
 
 Deferred work, newest first. Each item links to the design that describes it.
 
+## Cross-server session lock: wrap ProfileStore or build our own (L-030)
+
+Status: evaluated 2026-11-14, not decided. `MockDataStore` and `StoreContract` exist
+(`docs/decisions/0001-publish-late.md`); the session lock is the remaining half of L-030.
+ProfileStore (Apache-2.0, one ModuleScript) has cross-server session locking over
+MessagingService and a `.Mock` store, but it calls `DataStoreService` directly (no injection, so
+no Lune tests), has no schema `Version`, and the docs don't say what a failed load does to a
+real save. Options: (a) wrap it behind our own store interface and keep our ProfileStore's
+Version/read-only rules on top; (b) build a small lock in `UpdateAsync` (owner id and expiry in
+the profile), tested with `MockDataStore:interleave()`. Decide in Driftbloom M2 (G2), then
+fold the result into a shared `Profiles` module.
+
+## Review the milestone, milestone-plan and milestone-catalog templates after Driftbloom M2
+
+Status: scheduled (2026-11-14). `docs/design/templates/milestone.md`, `milestone-plan.md` and
+`milestone-catalog.md` (new) were drafted from Clockwork Keep's plans and Driftbloom M1, before any game used them.
+Driftbloom M2 is the first milestone planned from them. When M2 closes, compare the plan as
+written with what happened: unused sections, missing ones, whether the checkpoints and the
+rules block helped, whether `Check-ins` in the GDD template was used, and which catalog entries the Lead kept,
+merged or skipped (and whether any verdict was missing). Fix the templates and the
+`roblox-game-design` skill's stage 2 and 4 text, in one `framework:` commit.
+
 ## Multiplayer test bot
 
 Status: idea (run 001, Tiptoe Bandits M4, 2026-11-07). MCP drives one client, so two-player

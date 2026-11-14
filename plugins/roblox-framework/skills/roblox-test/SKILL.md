@@ -39,6 +39,17 @@ make test               # from the game folder (= lune run tests/run.lua); exits
   (`../../tests/runner.lua`) the game's specs and GameConfig. The runner, `harness.lua` and
   `framework.lua` (the framework's own checks: GameConfig is plain Lua, every src/ file
   compiles, ServiceLoader discovery) are framework files; don't edit them for one game.
+- **Saving and loading:** test the profile store against the framework's mock DataStore,
+  `require("@framework/src/framework/MockDataStore")` (in Studio: `ServerScriptService.MockDataStore`),
+  never a game-written stand-in. It follows the real service's key and value rules, re-runs an
+  `UpdateAsync` transform when the key changed under it, and injects faults: `store:failNext(n)`
+  (offline), `store:throttle(limit, clock)`, `store:interleave(fn)` (another server writes
+  between your read and write), `store:onCall(fn)`. `@framework/src/framework/StoreContract`
+  lists the behaviors any store must have: run `StoreContract.basic(make, H)` on a game's own
+  store wrapper. Criteria needing the real service (round trip, purchases) are tagged
+  `[needs-published]` and deferred to the platform-hardening milestone (`CLAUDE.md`,
+  *Publishing*). If the mock differs from the real DataStore, or lacks something a game needs,
+  fix it in the framework and add a contract case: don't work around it in the game.
 
 ## Tier 2 — In-engine integration smoke test
 

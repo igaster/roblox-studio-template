@@ -133,9 +133,36 @@ Anything in `ReplicatedStorage` is readable by exploiters. A class goes in
   or mark the session read-only. Never pay a reward into a profile that isn't loaded.
 - Use `UpdateAsync` rather than `SetAsync`, and store a schema `Version` so saved data can be
   migrated.
-- Studio needs "Enable Studio Access to API Services" for DataStores. Without it,
-  persistence fails soft (`warn()` and play unsaved). The owner module takes its store as a
-  parameter, so Lune tests pass in a small in-memory stand-in.
+- Studio needs a published place and "Enable Studio Access to API Services" for DataStores.
+  Without them, persistence fails soft. The owner module takes its store as a parameter.
+- **Use the framework's mock store** (`src/framework/MockDataStore.lua`, in Studio as
+  `ServerScriptService.MockDataStore`), never a game-written stand-in: Lune tests and the Tier 2
+  smoke test pass `MockDataStore.new()`; the owner module's Studio fallback (real DataStore
+  unavailable) uses `MockDataStore.newForStudio()`, which refuses to run outside Studio, and
+  `warn()`s that nothing persists. Only `DataService.lua`, `SmokeTest.lua` and `tests/` may
+  mention it (`tests/framework.lua` checks), so fake storage can't ship. It also injects
+  faults (`failNext`, `throttle`, `interleave`) for the failure rules above.
+- **Maintain the mock as games use it.** When the real service behaves differently from the mock,
+  or a game needs a call it lacks, fix `MockDataStore` and add the case to
+  `src/framework/StoreContract.lua` in the framework repo (game-agnostic, `framework:` commit),
+  never a game-local workaround. A game wraps the real store, so run `StoreContract.basic`
+  against it once in Play at the platform-hardening milestone (`[needs-published]`).
+
+### Publishing
+
+Develop on an unpublished local place; a published one is harder to work with (Studio drops
+Rojo connections on restart, and a published place adds constraints). Publish late: the GDD's
+`Publishing` field names the milestone (the framework default is *until G9, platform
+hardening*, or the first external player, whichever comes first), and anything that needs a
+published place waits for it unless the game truly requires it earlier.
+
+- A check that needs a published place (the real DataStore round trip, purchases, real
+  players) is tagged `[needs-published]` in its criterion. It is **deferred, never skipped**:
+  record it in `docs/STATUS.md` under *Deferred checks* with the milestone that closes it. A
+  milestone may end "go, pending published checks".
+- Don't wait for publishing to build persistence: build on the mock store and its contract tests.
+- Monetization (G12) can't start while a deferred check is open (purchases need a published
+  universe), and no external players before the deferred checks pass.
 
 ### What Rojo Syncs vs. What Studio Owns
 

@@ -74,6 +74,14 @@ the repo." Every step of a chat re-sends its whole history, so one chat kept acr
 checkpoints costs more each step and uses up usage limits fast (`CLAUDE.md`, *Working
 economically*). Say it only at those stops, never mid-task.
 
+## Publishing
+
+Read the GDD's `Publishing` field (`CLAUDE.md`, *Publishing*). Until that milestone the game
+stays unpublished: don't ask the owner to publish, build persistence on the framework's mock
+store, tag checks that need a published place `[needs-published]`, list them in
+`STATUS.md` under *Deferred checks*, and end the milestone "go, pending published checks". If
+the game truly needs a published place sooner, say why in plain text and let the owner decide.
+
 ## Human-only steps
 
 Studio must be open with the Rojo plugin connected (`make verify`; `roblox-studio-mcp`). When

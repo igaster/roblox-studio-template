@@ -15,6 +15,10 @@
 Open questions and checks only the creator can do (feel, phone, multiplayer), each with
 Claude's recommendation.
 
+## Deferred checks
+Checks tagged `[needs-published]` (the real DataStore round trip, purchases, real players), each
+with the milestone that closes it. None means none. Deferred, never skipped.
+
 ## Known problems
 Bugs and missed targets, each with the milestone that will handle it.
 

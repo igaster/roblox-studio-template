@@ -68,6 +68,9 @@ to confirm or edit each. Without a teardown, ask one at a time; offer examples f
 `references/player-experience.md` when the creator is unsure.
 
 ### 2. Milestone plan
+Read `../../docs/design/templates/milestone-catalog.md` first: give every entry a one-line
+verdict (fits, merges into M<n>, or skip with a reason) and keep its ID (`G3`) in the GDD's
+*Milestones* row. The catalog is a menu; add any milestone the game needs that isn't there.
 Order: dependencies first, then the riskiest assumption, then content, then monetization.
 **M1 = the smallest playable test of the riskiest assumption**: greybox art, one of each
 thing, no monetization, no persistence unless the loop needs it. Present as a short list
@@ -79,7 +82,9 @@ Only the current milestone gets full specs: the milestone file from
 `templates/feature-spec.md`, and their acceptance criteria copied into `docs/TESTING.md`.
 
 ### 4. Build handoff
-Write the implementation plan to `docs/design/milestones/M<N>-<name>-plan.md`, with
+Write the implementation plan to `docs/design/milestones/M<N>-<name>-plan.md`, starting from
+`../../docs/design/templates/milestone-plan.md` (checkpoints, rules for every task, the task
+skeleton), with
 `superpowers:writing-plans` if available (tell it that path: game plans never go under
 `docs/superpowers/`, which belongs to the framework) or yourself. Either way, each task names:
 the feature spec it implements, the files it touches (`GameConfig` keys, generator, class,

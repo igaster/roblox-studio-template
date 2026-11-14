@@ -5,7 +5,8 @@
 > only after the creator confirms it, or when the GDD's *Owner involvement* pre-approves it
 > (`roblox-lead`).
 
-> GDD design targets touched: DT<n>, …
+> GDD design targets touched: DT<n>, … Plan: [M<N>-<name>-plan.md](M<N>-<name>-plan.md)
+> (from `milestone-plan.md`; it names the checkpoints).
 
 ## Goal
 
@@ -35,7 +36,8 @@ Earlier milestones or systems that must exist first (persistence, a feature, art
 
 All feature specs' acceptance criteria pass, plus these milestone-level checks. Each has an
 ID (`M<N>-AC1`) and says how it's verified (Tier 1, Tier 2, `[playtest]`, `[visual]`,
-manual); a test checking it carries the ID in its name. Copy them into `docs/TESTING.md`
+manual; add `[needs-published]` when it can only run on a published place, which defers it to
+the GDD's *Publishing* milestone: list it in `STATUS.md` under *Deferred checks*); a test checking it carries the ID in its name. Copy them into `docs/TESTING.md`
 under a section for this milestone.
 
 - [ ] M<N>-AC1 `[playtest]` ...

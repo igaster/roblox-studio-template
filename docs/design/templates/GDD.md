@@ -20,6 +20,13 @@ it any time.
 
 **Stop after:** `M<N>` (stop and report after that milestone) or `never`.
 
+**Publishing:** `until G9` (default: stay unpublished until platform hardening, or the first
+external player), or `until M<N>` / `now` with the reason (`CLAUDE.md`, *Publishing*). Checks
+that need a published place are tagged `[needs-published]` and deferred to that milestone.
+
+**Check-ins:** `milestone end` (default) or `checkpoints` (also stop at each checkpoint named in
+the milestone plan, report, and wait for the owner's go).
+
 ## Pitch
 
 One sentence: who the player is and what they get to do.
