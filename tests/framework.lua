@@ -126,6 +126,86 @@ do
 	H.near("the tighter axis wins", LayoutMath.uiScale(1, 2000, 270, 960, 540), 0.5)
 end
 
+-- ---- UI theme (src/shared/UI/ThemeSchema, used by Kit and a game's GameConfig.Ui) -------
+H.section("UI ThemeSchema")
+do
+	local ThemeSchema = require("../src/shared/UI/ThemeSchema")
+	local function copy(v: any): any
+		if type(v) ~= "table" then
+			return v
+		end
+		local c = {}
+		for k, child in pairs(v) do
+			c[k] = copy(child)
+		end
+		return c
+	end
+
+	H.eq("the default theme is valid", #ThemeSchema.validate(ThemeSchema.DEFAULT), 0)
+	H.check("the default theme is recognised as the default", ThemeSchema.isDefault(copy(ThemeSchema.DEFAULT)))
+
+	local custom = copy(ThemeSchema.DEFAULT)
+	custom.Colors.Primary = { R = 200, G = 60, B = 60 }
+	H.check("a changed theme is no longer the default", not ThemeSchema.isDefault(custom))
+	H.eq("a non-table theme is one problem", #ThemeSchema.validate(nil), 1)
+
+	local noRole = copy(ThemeSchema.DEFAULT)
+	noRole.Colors.Danger = nil
+	H.eq("a missing colour role is reported", #ThemeSchema.validate(noRole), 1)
+
+	local badChannel = copy(ThemeSchema.DEFAULT)
+	badChannel.Colors.Text = { R = 300, G = 0, B = 0 }
+	H.eq("a colour channel over 255 is reported", #ThemeSchema.validate(badChannel), 1)
+
+	local small = copy(ThemeSchema.DEFAULT)
+	small.TextSizes.Small = 10
+	H.eq("text below MinTextSize is reported", #ThemeSchema.validate(small), 1)
+
+	local badVariant = copy(ThemeSchema.DEFAULT)
+	badVariant.ButtonVariants = { fancy = { Base = "Primary", Hover = "Nope", Pressed = "Primary", Text = "OnPrimary" } }
+	H.eq("a variant naming an unknown role is reported", #ThemeSchema.validate(badVariant), 1)
+
+	local variants = ThemeSchema.buttonVariants(badVariant)
+	H.check("defaults stay when a game adds a variant", variants.primary ~= nil and variants.fancy ~= nil)
+	H.eq("a button is at least the touch size", ThemeSchema.buttonHeight(ThemeSchema.DEFAULT, 18), 44)
+	H.eq("a tall text makes a taller button", ThemeSchema.buttonHeight(ThemeSchema.DEFAULT, 40), 58)
+
+	-- Contrast (WCAG ratios: black on white is 21:1, anything on itself 1:1)
+	local black, white = { R = 0, G = 0, B = 0 }, { R = 255, G = 255, B = 255 }
+	H.near("black on white is 21:1", ThemeSchema.contrast(black, white), 21, 0.01)
+	H.near("a colour on itself is 1:1", ThemeSchema.contrast(white, white), 1, 0.001)
+
+	local lowText = copy(ThemeSchema.DEFAULT)
+	lowText.Colors.Text = { R = 70, G = 74, B = 84 } -- near the panel colour
+	local lowProblems = ThemeSchema.validate(lowText)
+	H.check("low-contrast text is reported", #lowProblems >= 1 and string.find(lowProblems[1], "Text contrast", 1, true) ~= nil)
+
+	local lowButton = copy(ThemeSchema.DEFAULT)
+	lowButton.Colors.OnPrimary = { R = 255, G = 255, B = 255 } -- white on the bright default fill
+	H.check("a button text that fails in some state is reported", #ThemeSchema.validate(lowButton) >= 1)
+
+	local lowBar = copy(ThemeSchema.DEFAULT)
+	lowBar.Colors.Accent = { R = 30, G = 34, B = 44 } -- the track's own colour
+	H.check("a bar fill that vanishes into its track is reported", #ThemeSchema.validate(lowBar) >= 1)
+
+	H.eq("dark text is chosen on a bright fill", ThemeSchema.readableText(ThemeSchema.DEFAULT, "Good"), "TextOutline")
+	H.eq("light text is chosen on a dark fill", ThemeSchema.readableText(ThemeSchema.DEFAULT, "Track"), "Text")
+
+	local v = ThemeSchema.DEFAULT_BUTTON_VARIANTS.primary
+	local function roles(s: any)
+		local state = { disabled = false, selected = false, pressed = false, hovered = false }
+		for k, val in pairs(s) do
+			state[k] = val
+		end
+		return ThemeSchema.buttonRoles(v, state)
+	end
+	H.eq("rest colour is Base", (roles({})), "Primary")
+	H.eq("hover colour", (roles({ hovered = true })), "PrimaryHover")
+	H.eq("pressed beats hover", (roles({ hovered = true, pressed = true })), "PrimaryPressed")
+	H.eq("selected looks pressed", (roles({ selected = true })), "PrimaryPressed")
+	H.eq("disabled beats everything", (roles({ disabled = true, pressed = true, hovered = true })), "Disabled")
+end
+
 -- ---- MockDataStore (src/framework) and the store contract ------------------------
 -- The mock must behave like the real DataStore on everything the contract lists
 -- (src/framework/StoreContract.lua); FrameworkSmokeTest runs the same cases in-engine.
