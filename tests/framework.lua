@@ -206,6 +206,90 @@ do
 	H.eq("disabled beats everything", (roles({ disabled = true, pressed = true, hovered = true })), "Disabled")
 end
 
+-- ---- Level metrics and world palette (src/shared/LevelMetrics, WorldPalette) ---------------
+H.section("LevelMetrics")
+do
+	local LevelMetrics = require("../src/shared/LevelMetrics")
+	local m = {
+		PlayerHeight = 5,
+		PlayerWidth = 2,
+		WalkSpeed = 16,
+		JumpHeight = 7.2,
+		DoorHeight = 8,
+		DoorWidth = 6,
+		CorridorWidth = 8,
+		StepHeight = 1.5,
+		SafetyMargin = 0.25,
+		GridSize = 5,
+	}
+	H.eq("consistent metrics have no problems", #LevelMetrics.validate(m), 0)
+	-- airTime = 2 * sqrt(2h / g) = 2 * sqrt(14.4 / 196.2) = 0.5418 s
+	H.near("air time follows from jump height and gravity", LevelMetrics.airTime(m), 0.5418, 0.001)
+	H.near("jump distance is walk speed times air time", LevelMetrics.jumpDistance(m), 16 * 0.5418, 0.02)
+	H.near("a fair gap keeps the safety margin", LevelMetrics.maxGap(m), 16 * 0.5418 * 0.75, 0.02)
+	H.near("a fair ledge keeps the safety margin", LevelMetrics.maxLedge(m), 5.4, 0.001)
+	local moon = { Gravity = 98.1 }
+	for k, v in pairs(m) do
+		moon[k] = v
+	end
+	H.check("lower gravity lengthens the jump", LevelMetrics.jumpDistance(moon :: any) > LevelMetrics.jumpDistance(m))
+	H.eq("snap rounds to the grid", LevelMetrics.snap(m, 12), 10)
+	H.eq("snap rounds up past halfway", LevelMetrics.snap(m, 13), 15)
+
+	local function broken(key: string, value: any)
+		local c: any = {}
+		for k, v in pairs(m) do
+			c[k] = v
+		end
+		c[key] = value
+		return #LevelMetrics.validate(c)
+	end
+	H.eq("a missing number is reported", broken("GridSize", nil), 1)
+	H.eq("a door no taller than the player is reported", broken("DoorHeight", 5), 1)
+	H.eq("a door no wider than the player is reported", broken("DoorWidth", 2), 1)
+	H.eq("a corridor narrower than its door is reported", broken("CorridorWidth", 4), 1)
+	H.eq("a step as tall as a jump is reported", broken("StepHeight", 7.2), 1)
+	H.eq("a safety margin of 1 is reported", broken("SafetyMargin", 1), 1)
+	H.eq("a non-table is one problem", #LevelMetrics.validate(nil), 1)
+end
+
+H.section("WorldPalette")
+do
+	local WorldPalette = require("../src/shared/WorldPalette")
+	local good = {
+		Ground = { R = 110, G = 110, B = 115 },
+		Wall = { R = 150, G = 150, B = 155 },
+		Prop = { R = 130, G = 120, B = 110 },
+		Accent = { R = 70, G = 150, B = 220 },
+		Interactable = { R = 240, G = 200, B = 60 },
+		Hazard = { R = 220, G = 50, B = 50 },
+		Goal = { R = 60, G = 120, B = 255 },
+	}
+	local function with(role: string, color: any)
+		local c: any = {}
+		for k, v in pairs(good) do
+			c[k] = v
+		end
+		c[role] = color
+		return c
+	end
+
+	H.eq("a distinct palette is valid", #WorldPalette.validate(good), 0)
+	H.eq("a non-table is one problem", #WorldPalette.validate(nil), 1)
+	H.eq("a missing role is reported", #WorldPalette.validate(with("Goal", nil)), 1)
+	H.eq("a channel over 255 is reported", #WorldPalette.validate(with("Hazard", { R = 300, G = 0, B = 0 })), 1)
+	H.check("a hazard that matches the ground is reported", #WorldPalette.validate(with("Hazard", { R = 112, G = 110, B = 115 })) >= 1)
+	H.check("two gameplay roles that match are reported", #WorldPalette.validate(with("Goal", good.Hazard)) >= 1)
+	H.check("tighter limits accept what the default rejects", #WorldPalette.validate(with("Hazard", { R = 112, G = 110, B = 150 }), { MinGameplayDistance = 10, MinLuminanceRatio = 1 }) == 0)
+
+	-- Hue-only difference: red and green of equal brightness are hard to tell apart for some players.
+	local redGreen = with("Goal", { R = 0, G = 140, B = 0 })
+	redGreen.Hazard = { R = 200, G = 0, B = 0 }
+	H.eq("a valid palette can still carry an advisory", #WorldPalette.validate(redGreen), 0)
+	H.check("similar-brightness gameplay roles get an advisory", #WorldPalette.advisories(redGreen) >= 1)
+	H.eq("an invalid palette gets no advisories", #WorldPalette.advisories(with("Goal", nil)), 0)
+end
+
 -- ---- MockDataStore (src/framework) and the store contract ------------------------
 -- The mock must behave like the real DataStore on everything the contract lists
 -- (src/framework/StoreContract.lua); FrameworkSmokeTest runs the same cases in-engine.

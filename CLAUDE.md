@@ -196,7 +196,8 @@ The rule: **behavior and logic = code (git)**, **visual/3D assets = Studio**.
 
 Visual content (models, tools, parts, levels, UI) is built by generator modules in
 `ServerStorage/AssetGenerators/{GUI,Models,Parts,Tools}/`, never inline in game logic. The
-`roblox-asset-generators` skill has the patterns (reusable asset, level, GUI).
+`roblox-asset-generators` skill has the patterns for assets and levels, and `roblox-ui` the
+patterns for UI (built from the framework's UI kit, `shared/UI/`).
 
 ## Skills to load
 
@@ -205,7 +206,8 @@ it, including mid-build, when a plan task names it:
 
 | Work | Skill |
 |---|---|
-| A model, tool, part, level or GUI (anything under `AssetGenerators/`) | `roblox-asset-generators` |
+| A model, tool, part or level (anything under `AssetGenerators/` except `GUI/`) | `roblox-asset-generators` |
+| A HUD, menu, panel, button or any UI, its theme or layout check (`AssetGenerators/GUI/`, GUI controllers) | `roblox-ui` |
 | Running tests, writing Tier 1/2 tests, a milestone's checks | `roblox-test` |
 | Anything through the Studio MCP (`execute_luau`, Play, console) | `roblox-studio-mcp` |
 | Verifying gameplay in a Play session | `roblox-playtest` |

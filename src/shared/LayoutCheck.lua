@@ -4,7 +4,7 @@
 -- LayoutMath that every visible top-level element is on screen and none overlap. A
 -- deliberate "canary" overlap runs first, so a check that measures nothing fails loudly.
 --
--- Conventions it relies on (see the roblox-asset-generators skill):
+-- Conventions it relies on (see the roblox-ui skill; Kit.screen builds the first one):
 --   * The HUD is one ScreenGui whose content sits in a single root Frame with a UIScale
 --     child; the root's direct GuiObject children are the layout elements.
 --   * A label whose text varies sets the attribute LayoutSample to its longest text.

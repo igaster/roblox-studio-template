@@ -94,8 +94,8 @@ skeleton), with
 the feature spec it implements, the files it touches (`GameConfig` keys, generator, class,
 service, client script), its Tier 1 tests, and the acceptance criteria it satisfies.
 Each task also names the **skill to load** before starting it (`CLAUDE.md`, *Skills to load*):
-`roblox-asset-generators` for world or UI content (and the generator kind: asset, level or
-GUI; levels are rebuilt on every server start, never "built if missing"), `roblox-test` for
+`roblox-asset-generators` for world content (the generator kind: asset or level; levels are
+rebuilt on every server start, never "built if missing"), `roblox-ui` for any UI, `roblox-test` for
 tests (Tier 1, the smoke test, a balance simulator), `roblox-studio-mcp` for anything run in
 Studio (`execute_luau`, Play), `roblox-playtest` for in-Studio verification, `roblox-capture`
 for screenshots. A task that does several kinds of work names every skill it needs, and its

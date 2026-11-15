@@ -38,5 +38,5 @@ the first conversation in the project — don't wait to be asked a second time.
 
 ## After setup
 
-Once this is done, `roblox-test`, `roblox-asset-generators`, `roblox-capture`, and
+Once this is done, `roblox-test`, `roblox-asset-generators`, `roblox-ui`, `roblox-capture`, and
 `roblox-playtest` all become usable — they all assume Studio is open and connected.

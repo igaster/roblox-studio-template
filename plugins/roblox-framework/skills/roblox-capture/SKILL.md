@@ -44,6 +44,24 @@ looking at the Studio window. Requires MCP set up and Studio open — see
    (`inst:Destroy()` via `execute_luau`) so repeated captures don't accumulate
    leftover instances in `AgentScratch`.
 
+## Looking at the result (suggestions)
+
+A single close-up proves little. For an asset or a level, a few captures answer more:
+
+- **Gameplay distance.** Place the camera where the player usually is (the spawn view, the usual
+  third-person distance) and capture. Does the asset read there? Small details that vanish are
+  wasted effort; a shape that blends into the ground is a readability problem.
+- **Silhouette.** Temporarily give the asset one flat dark colour with no lighting variation (a
+  copy in `AgentScratch`, never the real one) and capture it at gameplay distance. If the shape
+  doesn't identify the object, the colour was doing the work.
+- **A few angles.** Front, a three-quarter view and from above for levels, so a design that only
+  works from one side shows up.
+- **A level from the spawn.** Capture the spawn view and each main route: can you see where to go
+  (`roblox-asset-generators`, `references/levels.md`)?
+
+Judge shape first, then palette, then detail (`references/art-direction.md`). These are ways to
+look, not a checklist; take the captures the question needs.
+
 ## When not to use this
 
 For verifying gameplay *behavior* (not a static look), use `roblox-playtest`

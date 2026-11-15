@@ -1,6 +1,6 @@
 ---
 name: roblox-asset-generators
-description: Use when adding, prototyping, or shipping a visual/3D Roblox asset, level or UI (model, tool, part, greybox room or level, HUD/ScreenGui) — e.g. "add a sword tool", "spawn a chest model", "build the greybox room", "add a HUD" — or when creating or editing any file under AssetGenerators/, including when a plan task calls for a generator.
+description: Use when adding, prototyping, or shipping a visual/3D Roblox asset or level (model, tool, part, greybox room or level, world palette, lighting) — e.g. "add a sword tool", "spawn a chest model", "build the greybox room" — or when creating or editing any file under AssetGenerators/ except GUI/, including when a plan task calls for a generator. UI (HUD, ScreenGui, menus) is the roblox-ui skill.
 ---
 
 # Roblox Asset Generators
@@ -10,46 +10,69 @@ description: Use when adding, prototyping, or shipping a visual/3D Roblox asset,
 Roblox 3D assets (models, tools, parts, meshes) normally live only in Studio and
 aren't version-controlled. The workaround: build the asset procedurally in a
 Luau module (a "generator"), so its structure lives in git like any other code.
-The generator returns a plain `Instance` — it never parents itself, and it
-never carries gameplay state.
+The generator returns a plain `Instance` — it never carries gameplay state.
+
+**Firm rules and suggestions.** Two kinds of guidance live here and in `references/`:
+
+- **Firm rules** are the ones marked *firm* below. Each guards a bug that is silent and costs a
+  debugging session (a stale staged copy, a part that falls out of the world). Follow them.
+- **Everything else is a suggestion.** It is the framework's best current advice (some from
+  research, some from past games), not a requirement. Diverge when the game's look, feel or
+  scale calls for it, and note why in the feature spec so the next chat doesn't undo it.
+
+## A suggested workflow for a new asset or level
+
+1. **Brief.** What is it, how big (from `GameConfig.Metrics`), and from what distance and
+   angle will the player see it? A pickup seen from across a room needs a different silhouette
+   than a prop seen up close.
+2. **Prototype.** A greybox, or a generative tool (see *Prototyping vs shipping*), to settle
+   the shape cheaply.
+3. **Generator.** Ship it as code following *Core Pattern*.
+4. **Look at it.** Capture it (`roblox-capture`) at gameplay distance, as a flat silhouette, and
+   from a few angles. Judge shape first, then palette, then detail.
+5. **Fix and repeat** until step 4 reads. Then move on; detail the player's space more than the
+   background.
+
+For levels, `references/levels.md` has the longer version; for the look of an asset,
+`references/art-direction.md`.
 
 ## Visual consistency across assets
 
-If `docs/design/STYLE_GUIDE.md` exists in the project, it's the canonical
-source for colors/materials — read it before choosing any `Color3`/`Material`
-value in a new generator, rather than picking freely per-asset. A project
-without one is free-form; don't require a style guide to exist, just defer to
-it when it does.
+If `docs/design/STYLE_GUIDE.md` exists, it's the canonical source for colours, shape language
+and materials — read it before choosing any `Color3`/`Material`. A project without one is
+free-form; don't require it, but defer to it when it exists (a template is at
+`../../docs/design/templates/style-guide.md`).
+
+The world's colours are **roles** in `GameConfig.World.Palette` (Ground, Wall, Prop, Accent,
+Interactable, Hazard, Goal): a generator picks a role and converts it with `Shared.ConfigTypes`,
+instead of writing a raw colour, so one change restyles every asset. `Shared.WorldPalette`
+checks that the roles a player must tell apart really differ, and the template's
+`WorldRules.spec.lua` runs it.
 
 ## Prototyping (MCP generative tools) vs. shipping (this skill)
 
-Two legitimate paths for getting a new asset, for different purposes:
+Two legitimate paths for getting a new asset:
 
 - **Prototyping/iterating on a look**: use `roblox-studio-mcp`'s generative tools
-  (`generate_mesh`, `generate_material`, `generate_procedural_model`) to quickly try
-  shapes, materials, or concepts directly in Studio. Fast, good for exploring
-  options with the user, but the result is **not version-controlled, not
-  deterministic, and not reviewable** — it lives only in the DataModel (or an
-  uploaded asset), not in git.
-- **Shipping/final asset**: once a design is picked (from a generative prototype,
-  a reference image, or a plain description), convert it into a hand-written
-  generator module following this skill's pattern below. This is what actually
-  gets committed — regenerable, diffable, testable, and consistent with the rest
-  of the codebase's "behavior = code" rule.
+  (`generate_mesh`, `generate_material`, `generate_procedural_model`) to try shapes,
+  materials, or concepts directly in Studio. Fast, good for exploring options with the
+  user, but the result is **not version-controlled, not deterministic, and not
+  reviewable** — it lives only in the DataModel (or an uploaded asset).
+- **Shipping/final asset**: once a design is picked, convert it into a hand-written
+  generator module following this skill's pattern. This is what gets committed —
+  regenerable, diffable, and consistent with "behavior = code".
 
-**Rule of thumb: prototype in B, ship in A.** Never let a generative-tool result
-become the permanent asset without converting it to a generator module first —
-even a rough procedural approximation (primitives standing in for the generated
-shape, config-driven dimensions) is preferable to an asset with no source of
-truth in git. If a generated mesh/material is genuinely needed as-is (too complex
-to reasonably approximate procedurally), that's a deliberate exception — flag it
-to the user rather than silently treating it as shipped.
+**Rule of thumb: prototype in B, ship in A.** Even a rough procedural approximation
+(primitives standing in for the generated shape, config-driven dimensions) is preferable
+to an asset with no source of truth in git. If a generated mesh/material is genuinely needed
+as-is (too complex to approximate procedurally), that's a deliberate exception — flag it to the
+user rather than silently treating it as shipped.
 
 ## Directory Convention
 
 ```
 ServerStorage/AssetGenerators/
-├── GUI/<Name>Generator.lua
+├── GUI/<Name>Generator.lua      (see roblox-ui)
 ├── Models/<Name>Generator.lua
 ├── Parts/<Name>Generator.lua
 └── Tools/<Name>Generator.lua
@@ -94,15 +117,14 @@ end
 return SwordGenerator
 ```
 
-Rules the pattern depends on:
+Guidance the pattern depends on (rules 5 and 6 are **firm**; the rest are suggestions):
 
 1. **`create<Name>()` builds and returns the instance — it does not parent it.**
    The caller (command bar, or a service script) decides where it goes:
    directly into `workspace`, or into a `ServerStorage.Assets` template folder
    for later `:Clone()`ing.
 2. **Sizes, colors, damage, cooldowns — anything tunable — come from
-   `GameConfig`, not hardcoded in the generator.** Same rule as the rest of the
-   codebase; generators aren't an exception. `GameConfig` stores them as plain
+   `GameConfig`, not hardcoded in the generator.** `GameConfig` stores them as plain
    tables/strings; convert with `Shared.ConfigTypes` (`vector3`, `color3`, `udim2`,
    `enum`) inside the generator.
 3. **The instance stays state-free.** If the asset later needs runtime state
@@ -111,13 +133,13 @@ Rules the pattern depends on:
 4. **Gameplay logic never builds instances inline.** A service script
    (`ServerScriptService/Services/*Service.lua`) requires the generator (or clones a
    template it produced) — it doesn't call `Instance.new` to build game
-   objects itself. This is what keeps the asset regenerable and the logic
-   testable independent of the visual.
-5. **Staging is destroy-and-regenerate, never "create if missing".** Workspace content can
-   be saved into the place file; an existence check then keeps serving that stale copy
+   objects itself. This keeps the asset regenerable and the logic testable
+   independent of the visual.
+5. **Firm: staging is destroy-and-regenerate, never "create if missing".** Workspace content
+   can be saved into the place file; an existence check then keeps serving that stale copy
    forever after the generator is fixed (this cost a whole investigation once). Destroy any
    existing staged instance and rebuild, every time.
-6. **Set `Anchored` explicitly on every generated `BasePart`** (`true` for static and
+6. **Firm: set `Anchored` explicitly on every generated `BasePart`** (`true` for static and
    trigger geometry, `false` only for deliberately physics-driven parts). An unanchored
    `CanCollide = false` part falls through the world and is silently removed by
    `FallenPartsDestroyHeight` cleanup, which fires `AncestryChanged` but not `Destroying`:
@@ -134,7 +156,8 @@ differences from a reusable asset:
 - A service calls `build()` **on every server start**, unconditionally (rule 5). Never "build
   if missing".
 - When real art is hand-placed in Studio, retire the generator; the place file owns the level
-  from then on (`CLAUDE.md`, *What Rojo Syncs vs. What Studio Owns*).
+  from then on (`CLAUDE.md`, *What Rojo Syncs vs. What Studio Owns*). Delete the greybox and the
+  Baseplate at that point.
 - New places from Studio's Baseplate template have a Baseplate with its top at Y = 0: put
   generated floors slightly above it (`Greybox.FLOOR_TOP`, or remove the Baseplate) to avoid
   z-fighting.
@@ -145,6 +168,8 @@ differences from a reusable asset:
 - Prototype **lighting** (`Lighting` properties, atmosphere, sky) is set the same way: a
   generator applies it at every server start, with its values in `GameConfig`, until lighting
   is tuned by hand in Studio.
+- Sizes come from `GameConfig.Metrics` and `Shared.LevelMetrics` (door and corridor widths, the
+  widest fair gap, a grid to snap to), not from guesses. See `references/levels.md`.
 
 ## Third-party assets
 
@@ -159,82 +184,6 @@ Sounds, meshes and decals from the Creator Store are referenced by id, not gener
 - Check every id loads in a Play session (`ContentProvider:PreloadAsync`) before relying on
   it, and list the ids with their source in the feature spec.
 
-## GUI generators
-
-`ServerStorage` (where generators live) is invisible to clients, so a client controller can't
-require a GUI generator. Pattern:
-
-1. A server service builds the UI from `GUI/<Name>Generator.lua` and parents a copy into each
-   player's `PlayerGui` on join (and on respawn if `ResetOnSpawn` is true).
-2. The client controller (`Controllers/<Name>Controller.lua`) does
-   `player:WaitForChild("PlayerGui"):WaitForChild("<Name>")` and binds to attributes/remotes.
-   It never builds the UI itself.
-
-**Screen UI always draws over in-world UI.** Every `ScreenGui` draws over every
-`BillboardGui` (health bars, prompts, labels), whatever `ZIndex` or `DisplayOrder` say. So:
-- keep screen plates small and near the edges; a wide bar at the top hides whatever is
-  behind it in the world;
-- make large plates semi-transparent (`CanvasGroup` with `GroupTransparency`). Fade them
-  while world UI projects behind them (`Camera:WorldToViewportPoint` on the billboards'
-  adornees, a few times a second);
-- a layout check of screen rects can't see this; check it in Play with world UI behind the
-  plate.
-
-## HUD layout (checked automatically)
-
-Overlaps and off-screen elements show up at window sizes and UI scales nobody tried, so
-don't check a HUD by eye at one size. Build it to these conventions and `shared/LayoutCheck`
-measures it at several window sizes, UI scales and game phases:
-
-- **One root.** The HUD is one `ScreenGui` whose content sits in a single `Root` frame with a
-  `UIScale` child. Root's direct children are the layout elements (status bar, hotbar, side
-  panels, modals); everything else nests inside one of them.
-- **Scale with a minimum logical size.** Design for a minimum logical size (e.g. 960×540).
-  The HUD controller sets `UIScale.Scale = LayoutMath.uiScale(step, w, h, minW, minH)` and
-  `Root.Size = UDim2.fromScale(1 / scale, 1 / scale)`, so the player's UI-scale step applies
-  on large windows and small windows shrink the HUD instead of overlapping it.
-- **Stay clear of Roblox's own UI.** Set `ScreenGui.IgnoreGuiInset = false`, so the HUD starts
-  below the top bar (its menu, chat and logo buttons sit in the top-left, and the player list in
-  the top-right); a HUD that ignores the inset has its top-left elements hidden behind them, and
-  the capture tool does not draw Roblox's buttons, so a screenshot won't show it. Keep important
-  readouts out of the top-right while the player list is on. Compute the UI scale from the
-  `ScreenGui`'s `AbsoluteSize` (the usable area), not the camera's `ViewportSize`.
-- **Modals switch world prompts off.** While a modal panel is open, set
-  `ProximityPromptService.Enabled = false` (and back on when the last modal closes): prompts draw
-  through a translucent panel and can be triggered from behind it.
-- **Worst-case text.** A label whose text varies sets the attribute `LayoutSample` to its
-  longest realistic text (`"$99,999"`, `"Level 120"`). The check fills these before
-  measuring, since an empty label hides overflow.
-- **Anchors.** A floating menu that follows something in the world can be a zero-size anchor
-  frame; the check measures the union of its visible children.
-- **Styling in one place.** Take colors, fonts, radii and spacing from `GameConfig` through
-  one style module, so a later theme restyles every element without touching generators.
-
-Register the check as a Studio-only dev command in the HUD controller's `init()`, with the
-game's phases:
-
-```lua
-TestHooks.registerCommand("LayoutCheck", function()
-	return LayoutCheck.run({
-		root = hud.Root,
-		always = { "StatusBar", "Hotbar" },
-		phases = { Lobby = { "LobbyPanel" }, Playing = { "Minimap" }, Paused = { "PauseMenu" } },
-		sizes = { { 665, 520 }, { 1280, 720 }, { 1920, 1080 }, { 2560, 1440 } },
-		steps = { 0.9, 1, 1.15 }, -- UI scale choices offered to the player
-		minSize = { 960, 540 },
-		allowed = { ["PauseMenu|*"] = true }, -- modals may cover the HUD
-		canary = { "Hotbar", "StatusBar" }, -- a deliberate overlap that must be caught first
-		prepare = function(root, phase, size) end, -- show every list row, long texts
-	})
-end)
-```
-
-Run it in a Play session on the **Client** datamodel through the LocalPlayer's attributes
-(`Dev_LayoutCheck`, see `roblox-playtest`) after GUI changes. The result starts with
-`LAYOUT OK`, `LAYOUT FAILED` (one line per problem) or `LAYOUT CHECK BROKEN` (the canary
-overlap wasn't found, so the check measured nothing). The rules (`shared/LayoutMath`) are
-pure and covered by the Lune tests.
-
 ## Quick Reference
 
 | Asset need | Directory | Typical root Instance |
@@ -242,13 +191,11 @@ pure and covered by the Lune tests.
 | Static decoration, terrain prop | `Models/` | `Model` |
 | Equippable item | `Tools/` | `Tool` |
 | Single part / projectile | `Parts/` | `Part` |
-| UI element | `GUI/` | `ScreenGui` / `Frame` (HUD: one `Root` + `UIScale`, see *HUD layout*) |
+| UI element | `GUI/` | `ScreenGui` / `Frame` (see `roblox-ui`) |
+| Greybox room or level | `Models/` or the game's level generator | `Folder` / `Model` with a fixed home |
 
 ## Common Mistakes
 
-- **Two `UICorner`s on one GUI object** (a style helper adds one, then the caller adds
-  another to make it round): only one applies and the shape silently stays wrong. Change
-  the existing `UICorner` instead.
 - **Building the asset inline in a service script** instead of a generator —
   makes the asset non-regenerable and couples visuals to gameplay logic.
 - **Parenting inside `create<Name>()`** — forces every caller into the same
@@ -258,11 +205,12 @@ pure and covered by the Lune tests.
   follows.
 - **A staging routine that only creates the asset "if missing"** — silently
   keeps serving stale, previously-saved `Workspace` content forever after a
-  generator fix, since the existence check skips regeneration. Destroy and
-  regenerate unconditionally instead.
+  generator fix. Destroy and regenerate unconditionally instead.
 - **Forgetting `Anchored = true` on a generated `BasePart`** — it falls under
   gravity, and if `CanCollide = false` it can fall far enough to trigger
   Roblox's fallen-parts cleanup, silently vanishing with an `AncestryChanged`
   event but no `Destroying` — a genuinely confusing bug to debug from the
   symptom alone. Set `Anchored` explicitly on every generated part, don't
   rely on the engine default.
+- **Judging an asset only up close.** Look at it at the distance and angle the player sees it
+  from (`roblox-capture`); a shape that reads at arm's length can vanish across a room.

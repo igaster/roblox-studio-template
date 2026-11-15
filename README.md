@@ -44,7 +44,8 @@ one-line idea to a milestone at a time.
 | `roblox-game-modeling` | Optional: a simulation or balance model of the game's numbers |
 | `roblox-game-teardown` | Studying an existing game named as inspiration |
 | `roblox-lead` | Designing and building whole milestones with little involvement from you |
-| `roblox-asset-generators` | Models, tools, parts, levels and GUIs built by code |
+| `roblox-asset-generators` | Models, tools, parts and levels built by code, with level-design and art-direction suggestions |
+| `roblox-ui` | HUDs, menus and panels built from the UI kit, themes, and the layout check |
 | `roblox-test` | Running and writing tests, milestone checks |
 | `roblox-studio-mcp` | Driving Studio from the agent (run code, Play, read the console) |
 | `roblox-playtest` | Verifying gameplay in a scripted Play session |

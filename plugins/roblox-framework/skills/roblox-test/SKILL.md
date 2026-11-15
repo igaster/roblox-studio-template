@@ -93,7 +93,7 @@ script as new systems land.
 
 **HUD layout isn't covered here:** a server can't measure GUI. For a game with a generated
 HUD, run the client-side `LayoutCheck` dev command after GUI changes (see
-`roblox-asset-generators`, *HUD layout*).
+`roblox-ui`, *HUD layout*).
 
 **Writing checks that don't race:**
 - Start the run with `TestHooks.muteAudio(true)`, so test runs are silent.
