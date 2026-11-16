@@ -41,10 +41,13 @@ to `.ledger/` and `.training/` work in auto mode.
    - The game folder exists (`make new-game NAME=<kebab-name>` for a new game, from a working
      name in the scenario, e.g. `like-grow-a-garden`; the real title comes later from the GDD).
    - `make serve` runs in the game folder (in the background), and `make verify` there passes.
-   - Ask the maintainer once for the exact Studio place name for this game (as shown in
-     Studio's title bar), unless you already know it from an earlier session.
+   - Ask the maintainer to open the game's place and connect Rojo, unless you already know
+     the place from an earlier session. Studio's title bar shows the file path, not the name
+     the MCP uses (an unsaved or new place is `Place15`, say), so take the place name from
+     `list_roblox_studios` once connected and pass that to `session.py start --place`.
    - Via the Studio MCP (yours, or a headless `claude -p --mcp-config .mcp.json`):
-     `list_roblox_studios` shows exactly one Studio, **named exactly that place**; and
+     `list_roblox_studios` shows exactly one Studio, **whose name is that place** (and whose
+     `file` is the game's `.rbxl` in `games/<name>/`); and
      `ServerScriptService.FrameworkSmokeTest` exists and its `Source` matches the file on
      disk (proves Rojo syncs *this* repo into *that* place).
    - Any mismatch or stale tree → ask the maintainer for the human step (open the right place;

@@ -1,5 +1,6 @@
 {
   "description": "What the headless Lead may do without asking during a training session. Approved by the owner on 2026-11-07 (WebSearch/WebFetch added with approval the same day; superpowers skill scripts and git check-ignore approved after run 001; full Rokit paths for lune and rojo approved 2026-11-11); the trainer never widens it without a new approval.",
+  "model": "sonnet",
   "permissionMode": "acceptEdits",
   "allowedTools": [
     "Read",

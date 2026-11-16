@@ -209,7 +209,11 @@ def claude_args(session, extra):
     plugin = os.path.join(root, "plugins", "roblox-framework")
     layout = (["--plugin-dir", plugin, "--add-dir", root, "--add-dir", capture_dir(session)]
               if game and os.path.isdir(plugin) else [])
-    return ([os.environ.get("CLAUDE_BIN", "claude"), "-p", *extra, *layout,
+    # Pinned so runs stay comparable: the Lead must not follow the maintainer's /model default.
+    # LEAD_MODEL overrides the profile's "model" for one run; neither set means Claude's default.
+    model = os.environ.get("LEAD_MODEL") or p.get("model")
+    pin = ["--model", model] if model else []
+    return ([os.environ.get("CLAUDE_BIN", "claude"), "-p", *extra, *pin, *layout,
              "--output-format", "stream-json", "--verbose", "--settings", hook_settings(root),
              "--mcp-config", os.path.join(root, ".mcp.json"), "--strict-mcp-config",
              "--permission-mode", p["permissionMode"],
