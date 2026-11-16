@@ -106,6 +106,26 @@ writing attributes still works, so reading `TestHooks` events and state still wo
 **dev commands over attributes** instead (`roblox-playtest`, *Generic scenario setup*): the
 handler runs inside the game, with its permissions.
 
+## `execute_luau` cannot see a service's runtime state
+
+A `require` from `execute_luau` loads a **separate copy** of the module: its tables (sessions,
+caches, registries) are empty, so calling a service's functions through it does nothing to the
+running game. Register a Studio-only command in the service (`TestHooks.registerCommand`) and drive
+it with `TestHooks.runCommand`. Pure modules (`*Math`) are fine to `require` from `execute_luau`.
+
+## Before a Play check: has the sync landed?
+
+A Play session started right after Rojo synced can run stale code (an old HUD, a missing module).
+Read a marker from the **Edit** datamodel first (does the new file exist, does the source contain a
+new string?), start Play, wait a few seconds, and check again on the Server datamodel. A session you
+did not start (the user's) holds their state: do not stop or reuse it, ask.
+
+## Reading results without flooding the context
+
+`get_console_output` has no filter and returns the whole log on every call. Make a smoke test or a
+dev command **return its verdict**, and read the console only when it says something failed, once
+per checkpoint.
+
 ## Known failures
 
 - **`start_stop_play` stuck on "Start play hasn't finished yet"** while other tools keep

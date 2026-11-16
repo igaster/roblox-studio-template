@@ -55,7 +55,10 @@ and must be able to tell the owner's words from yours.
 3. **Verify and review:** milestone checks (`roblox-test`, `roblox-playtest`), then one
    `roblox-reviewer` subagent on the milestone's code; fix what it finds. Its prompt gives
    the scope (changed files, specs, plan) and the milestone's own risks; the agent holds the
-   checklist and the report format.
+   checklist and the report format. If the `roblox-reviewer` type is not registered (a session
+   started outside `make claude`), brief a general-purpose subagent to read
+   `plugins/roblox-framework/agents/roblox-reviewer.md` and follow it exactly; it works. Check each
+   finding against the code before acting, and write a test that fails without each fix.
 4. **Result:** fill in the milestone's *Result* (stage 5), including the human-only checks
    still pending (phone, multiplayer, real players).
 5. **Stop or continue:** if this milestone is **Stop after**, report and end your turn.
@@ -81,6 +84,18 @@ stays unpublished: don't ask the owner to publish, build persistence on the fram
 store, tag checks that need a published place `[needs-published]`, list them in
 `STATUS.md` under *Deferred checks*, and end the milestone "go, pending published checks". If
 the game truly needs a published place sooner, say why in plain text and let the owner decide.
+
+## Unattended runs
+
+When the owner leaves the session running, do a pre-flight and agree the rules before they go.
+**Pre-flight:** Studio open in Edit mode on the right place, `make verify` green, tests green, the
+laptop on AC power with sleep prevented, **the lid open** (a MacBook with no external display sleeps
+when the lid closes whatever `caffeinate` asserts, and Studio, Rojo and the MCP connection stop; dim
+the screen instead), no Play session of the owner's running, and a permission mode that will not
+stop to ask (a pending prompt stalls the agent). **Rules:** decide, record each decision as
+`(assumed)` in `docs/decisions/`, never commit or push unless the owner said so, and leave anything
+that needs a person (two clients, a published place, a feel check) for the end as a short list in
+`docs/STATUS.md`. Tell the owner plainly when they can leave.
 
 ## Human-only steps
 

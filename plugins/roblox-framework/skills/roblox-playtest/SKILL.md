@@ -115,6 +115,16 @@ Key pitfalls this template avoids, each hit at least once in practice:
   from the target, no unrelated obstacle in the path) before concluding it's a game bug — a
   wrong test setup and a real regression can look identical from the output alone.
 
+## Clicking a GUI button (a real click-through check)
+
+A button's `Activated` cannot be fired from a script, but `user_mouse_input` can click it: pass the
+button's `instance_path` (for example `LocalPlayer.PlayerGui.Hud.Root.ShopPanel.Rows.Row_X.BuyButton`)
+and it resolves the screen position, so `moveTo` that path, `wait` about 300 ms, then
+`mouseButtonClick`. Judge the result by what the button changes (a coin or item attribute, a panel's
+`Visible`), not by the tool's "Success". A prompt is pressed with `InputHoldBegin` and
+`InputHoldEnd` on the Client datamodel with the character next to it. A modal panel that turns
+`ProximityPromptService.Enabled` off must be closed (click its button) before a prompt will fire.
+
 ## Generic scenario setup — use TestHooks first
 
 TestHooks API (`../../src/shared/TestHooks.lua`, server side unless noted):

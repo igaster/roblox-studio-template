@@ -139,6 +139,24 @@ Add a section per milestone as it completes, and mark which items are
 `roblox-playtest`-delegable vs. genuinely manual so future sessions don't have to
 re-derive it.
 
+## Verifying the tests themselves
+
+- **Run `make test` after every Lua edit.** Its compile check is the only headless check of
+  Studio-only code (services, controllers, generators): a syntax error there leaves a controller
+  silently unbound until the console shows it. (Luau also rejects a statement that starts with `;(`
+  right after `do` or `then`: use a local.)
+- **Mutate each new rule once.** Break it on purpose (an `isFree` that always says yes, a save that
+  ignores a lost lock) and watch the specs fail; revert and grep for your marker. A suite that passes
+  first time proves little, and this is how a check that can never fail (a tautology) gets caught.
+  Run the mutated suite in the background: a broken edit can hang a run.
+- **Test the races, not only the states.** Put orchestration (what must wait for what: a leave save
+  in flight and a rejoin; an open and a leave) in a class that takes its store, clock and `wait`, and
+  drive the race in Lune with a coroutine that yields at the store call (the mock store's `onCall`
+  hook may yield). Services that touch Roblox services have no Tier 1 test: keep them thin.
+- **A roll added to an old flow can change an old test.** Run the existing specs first: a test that
+  passed by luck should state what it expects instead of assuming the common case.
+- **Tier 2: the return value is the verdict.** Read the console only when it is false.
+
 ## Workflow rule
 
 Run Tier 1 after every logic change. Request Tier 2 when classes or generators
